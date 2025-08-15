@@ -1,0 +1,33 @@
+<%- include('../partials/header') %>
+
+<h1><%= title %></h1>
+
+<% if (errors && errors.length > 0) { %>
+  <ul class="form-errors">
+    <% errors.forEach(error => { %>
+      <li><%= error %></li>
+    <% }) %>
+  </ul>
+<% } %>
+
+<% if (success) { %>
+  <p class="form-success"><%= success %></p>
+<% } %>
+
+<form action="/contact" method="POST" novalidate>
+  <label>Name:</label>
+  <input type="text" name="name" value="<%= formData.name || '' %>" required minlength="2" />
+
+  <label>Email:</label>
+  <input type="email" name="email" value="<%= formData.email || '' %>" required />
+
+  <label>Subject:</label>
+  <input type="text" name="subject" value="<%= formData.subject || '' %>" required minlength="3" />
+
+  <label>Message:</label>
+  <textarea name="message" required minlength="10"><%= formData.message || '' %></textarea>
+
+  <button type="submit">Send Message</button>
+</form>
+
+<%- include('../partials/footer') %>

@@ -1,0 +1,232 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title><%= title || 'Build' %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Dark theme base */
+    :root {
+    --bg:#0b0d10; --panel:#15181d; --panel2:#101317; --border:#232831;
+    --text:#f1f5f9; --muted:#9aa3af; --accent:#e2e8f0;
+    --radius:16px; --container:1100px;
+    --text-max: 680px;             /* max readable width for copy */
+    --block-h: clamp(520px, 55vh, 860px); /* smaller max height, uniform across blocks */
+    --hero-max-w: 1600px;        /* maximum hero width so it never feels huge */
+    --hero-min-w: 720px;         /* minimum so it doesn’t get too tiny on desktops */
+    --hero-h:     clamp(600px, 70vh, 1000px); /* comfortable height band */
+    }
+
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; }
+
+    /* Top bar + breadcrumb + backlink (restores your old look) */
+    .topnav { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .breadcrumb { color:var(--muted); }
+    .breadcrumb a { color:var(--muted); text-decoration:none; border-bottom:1px dashed var(--border); }
+    .backlink { color:var(--muted); font-size:14px; padding:8px 12px; border-radius:999px;
+        border:1px solid var(--border); background:transparent; text-decoration:none; }
+    .backlink:hover { background:var(--panel); color:var(--text); }
+
+    /* Full-bleed helper: make a section span the entire viewport width even if it's inside .container */
+    .full-bleed {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw;
+    margin-right: -50vw;
+    }
+
+/* 4) Parallax-lite (edge-to-edge, contained) */
+    .hero--parallax{
+        width:100%; 
+        height: var(--hero-h); 
+        margin:16px 0 32px;
+        background-size: cover; 
+        background-position: center;
+        background-attachment: fixed; /* graceful fallback on iOS (acts like cover) */
+        position: relative;
+        opacity: 0;   /* Start invisible */
+        animation: heroFadeIn 1000ms ease-out forwards; /*Fade in on load*/
+    }
+
+    /* Black overlay we’ll control via JS */
+    .hero--parallax .hero-overlay{
+        position:absolute; inset:0;
+        background:#000;
+        opacity: 0;                           /* 0 -> 1 as you scroll */
+        transition: opacity 80ms linear;      /* smoothen updates */
+        pointer-events:none;
+        will-change: opacity;
+    }
+
+    /* Nice load-in */
+    @keyframes heroFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* Buttons (in case these got lost) */
+    .btn{display:inline-block; padding:10px 16px; border-radius:999px; background:var(--accent); color:#0b0d10; border:1px solid var(--accent);}
+
+    /* Alternating split blocks */
+    .block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    height: var(--block-h); /* was min-height; now fixed so all images match */
+    }
+
+    .block .info {
+    background: linear-gradient(180deg,var(--panel),var(--panel2));
+    border: 1px solid var(--border);
+    border-right: none;                 /* seamless seam between halves */
+    height: 100%;
+    display: grid;
+    place-items: center;                /* vertically center the content chunk */
+    }
+
+    .block .info-inner {
+    width: 100%;
+    max-width: var(--text-max);         /* keep text comfortable on ultrawide */
+    padding: 24px;
+
+    /* keep long lists from making the block taller */
+    max-height: calc(var(--block-h) - 48px);
+    overflow: auto; /* shows a small scroll if content exceeds the fixed height */
+    }
+
+    .block .info-inner h2 {
+    margin: 0 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent);
+    }
+
+    .block .info-inner ul { 
+    margin:0; padding-left:18px; 
+    }
+
+    .block .media {
+    border-left: 1px solid var(--border);  /* seam line */
+    overflow: hidden;
+    background: var(--panel2);
+    height: 100%;
+    }
+
+    .block .media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;                  /* fill the half; crop if needed (no distortion) */
+    object-position: center;
+    }
+
+    /* Mirror every odd block (image left, info right) */
+    .block.mirror .info { order: 2; border-right: 1px solid var(--border); border-left: none; }
+    .block.mirror .media { order: 1; border-left: none; }
+
+    /* Responsive: stack on mobile and drop full-bleed (no horizontal scroll) */
+    @media (max-width: 900px){
+    .topnav{ flex-direction:column; align-items:flex-start; gap:8px; }
+    .full-bleed { left:auto; right:auto; margin-left:0; margin-right:0; width:auto; }
+    .block { grid-template-columns: 1fr; height: auto; }
+    .block .info-inner { max-height: none; overflow: visible; }
+    .block .media img { aspect-ratio: 16/9; height: auto; } /* nicer on phones */
+    .hero--parallax{ background-attachment: scroll; }
+    
+}
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="topnav">
+        <div class="breadcrumb"><a href="/builds">Custom Builds</a> / <span><%= build.name %></span></div>
+            <a class="backlink" href="/builds">← Back to all builds</a>
+    </div>
+
+    <h1><%= build.name %></h1>
+    <% if (build.subtitle) { %><p class="sub"><%= build.subtitle %></p><% } %>
+  </div>      
+
+    <% if (build.hero_image) { %>
+        <section class="hero hero--parallax" style="background-image:url('<%= build.hero_image %>');">
+            <div class="hero-overlay"></div>
+        </section>
+
+    <% } %>
+
+  <div class="container">
+    <% if (blocks && blocks.length) { %>
+      <% blocks.forEach((blk, i) => { %>
+        <section class="block full-bleed <%= i % 2 === 1 ? 'mirror' : '' %>">
+            <div class="info">
+                <div class="info-inner">
+                <h2><%= blk.title %></h2>
+                <ul>
+                    <% (blk.items || []).forEach(it => { %>
+                    <li><%= it.text %></li>
+                    <% }) %>
+                </ul>
+                </div>
+            </div>
+            <div class="media">
+                <% if (blk.imageUrl) { %>
+                <img src="<%= blk.imageUrl %>" alt="<%= blk.imageAlt %>">
+                <% } %>
+            </div>
+        </section>
+
+      <% }) %>
+    <% } %>
+
+    <% if (extraPhotos && extraPhotos.length) { %>
+      <section>
+        <h2 style="font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:24px 0 8px">More photos</h2>
+        <div class="gallery">
+          <% extraPhotos.forEach(p => { %>
+            <img src="<%= p.url %>" alt="<%= p.alt || (build.name + ' photo') %>">
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <div class="cta">
+      <a class="btn" href="/contact">Start Your Build</a>
+    </div>
+  </div>
+<script>
+(() => {
+    const hero = document.querySelector('.hero--parallax');
+    if (!hero) return;
+    const overlay = hero.querySelector('.hero-overlay');
+
+    let top = 0, height = 0, ticking = false;
+
+    function measure() {
+        top = hero.offsetTop;
+        height = hero.offsetHeight || 1;
+    }
+    function clamp(v, a, b){ return v < a ? a : v > b ? b : v; }
+
+    function update() {
+        const y = window.scrollY || window.pageYOffset || 0;
+        // Progress 0 → 1 across the hero’s height
+        let p = (y - top) / height;
+        // Optional easing to make the fade speed feel nicer
+        p = Math.pow(clamp(p, 0, 1), 0.6); // try 1.2 for quicker blackout, 0.9 for slower
+        overlay.style.opacity = p.toFixed(3);
+        ticking = false;
+    }
+
+    function onScroll() {
+        if (ticking) return;
+        ticking = true;
+        requestAnimationFrame(update);
+    }
+
+    // Init + listeners
+    measure();
+    update();
+    window.addEventListener('resize', () => { measure(); update(); }, { passive:true });
+    window.addEventListener('scroll', onScroll, { passive:true });
+})();
+</script>
+</body>
+</html>

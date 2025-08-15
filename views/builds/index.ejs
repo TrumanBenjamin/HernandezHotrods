@@ -1,0 +1,51 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title><%= title || 'Custom Builds' %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* tiny, temporary styles so you can "see" the grid */
+    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0d10; color:#f1f5f9; }
+    .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
+    h1 { margin: 0 0 8px; }
+    p.sub { color:#9aa3af; margin:0 0 24px; }
+    .grid { display:grid; gap:16px; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); }
+    .card { border:1px solid #232831; border-radius:16px; overflow:hidden; background:linear-gradient(180deg,#15181d,#101317); }
+    .thumb { aspect-ratio:16/10; background:#0f1216; display:block; width:100%; object-fit:cover; }
+    .meta { padding:12px 14px 16px; }
+    .name { margin:0 0 6px; font-size:18px; }
+    .subtxt { color:#9aa3af; margin:0; font-size:14px; }
+    .card a { display:block; color:inherit; text-decoration:none; }
+    .empty { color:#9aa3af; padding:16px; border:1px dashed #232831; border-radius:12px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Custom Builds</h1>
+    <p class="sub">A few recent favorites.</p>
+
+    <% if (!builds || builds.length === 0) { %>
+      <div class="empty">No builds yet. Add some rows in the database and refresh.</div>
+    <% } else { %>
+      <div class="grid">
+        <% builds.forEach(b => { %>
+          <div class="card">
+            <a href="/builds/<%= b.slug %>">
+              <% if (b.image) { %>
+                <img class="thumb" src="<%= b.image %>" alt="<%= b.name %>">
+              <% } else { %>
+                <div class="thumb"></div>
+              <% } %>
+              <div class="meta">
+                <h2 class="name"><%= b.name %></h2>
+                <% if (b.subtitle) { %><p class="subtxt"><%= b.subtitle %></p><% } %>
+              </div>
+            </a>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+</body>
+</html>
