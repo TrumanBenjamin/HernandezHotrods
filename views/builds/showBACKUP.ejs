@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title><%= title || 'Build' %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+    /* Dark theme base */
+    :root {
+    --bg:#0b0d10; --panel:#15181d; --panel2:#101317; --border:#232831;
+    --text:#f1f5f9; --muted:#9aa3af; --accent:#e2e8f0;
+    --radius:16px; --container:1100px;
+    --text-max: 680px;             /* max readable width for copy */
+    --block-h: clamp(520px, 55vh, 860px); /* smaller max height, uniform across blocks */
+    --hero-max-w: 1600px;        /* maximum hero width so it never feels huge */
+    --hero-min-w: 720px;         /* minimum so it doesn’t get too tiny on desktops */
+    --hero-h:     clamp(600px, 70vh, 1000px); /* comfortable height band */
+    }
+
+    body { margin:0; font-family:system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); overflow-x:hidden; }
+
+    /* Top bar + breadcrumb + backlink (restores your old look) */
+    .topnav { display:flex; justify-content:space-between; align-items:center; margin-bottom:8px; }
+    .breadcrumb { color:var(--muted); }
+    .breadcrumb a { color:var(--muted); text-decoration:none; border-bottom:1px dashed var(--border); }
+    .backlink { color:var(--muted); font-size:14px; padding:8px 12px; border-radius:999px;
+    border:1px solid var(--border); background:transparent; text-decoration:none; }
+    .backlink:hover { background:var(--panel); color:var(--text); }
+
+    /* Full-bleed helper: make a section span the entire viewport width even if it's inside .container */
+    .full-bleed {
+    width: 100vw;
+    position: relative;
+    left: 50%;
+    right: 50%;
+    margin-left: -50vw; 
+    margin-right: -50vw; 
+    }
+
+    .hero--inline .hero-frame{
+    width: clamp(var(--hero-min-w), 66.666vw, var(--hero-max-w)); /* ~2/3 page */
+    height: var(--hero-h);
+    margin: 0 auto;                 /* CENTER it */
+    position: relative;
+    overflow: hidden;               /* clip to height */
+    /* no border/radius */
+    }
+    .hero--inline .hero-img{
+    position: absolute; inset: 0;
+    width: 100%; height: 100%;
+    object-fit: cover; object-position: center;
+    display: block;
+    will-change: transform;
+    }
+    .hero--inline .hero-overlay{
+    position: absolute; inset: 0;
+    background: #000;
+    opacity: 0;                     /* we’ll fade this only */
+    transition: opacity 80ms linear;
+    pointer-events: none;
+    will-change: opacity;
+    }
+
+    /* Content after the first container paints above the fixed hero */
+    .container + .container,
+    .block,
+    .gallery,
+    .cta {
+    position: relative;
+    z-index: 2;
+    }
+
+
+    /* Nice load-in */
+    @keyframes heroFadeIn {
+        from { opacity: 0; transform: translateY(6px); }
+        to   { opacity: 1; transform: translateY(0);    }
+    }
+
+    /* Content after the first container paints above the fixed hero */
+    .container + .container,
+    .block,
+    .gallery,
+    .cta {
+    position: relative;
+    z-index: 2;
+    }
+
+    /* Buttons (in case these got lost) */
+    .btn{display:inline-block; padding:10px 16px; border-radius:999px; background:var(--accent); color:#0b0d10; border:1px solid var(--accent);}
+
+    /* Alternating split blocks */
+    .block {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    align-items: stretch;
+    height: var(--block-h); /* was min-height; now fixed so all images match */
+    }
+
+    .block:first-of-type::before {
+        content: "";
+        display: block;
+        height: 10px;
+        background: linear-gradient(to bottom, #0b0d10 0%, transparent 100%);
+    }
+
+    .block .info {
+    background: linear-gradient(180deg,var(--panel),var(--panel2));
+    border: 1px solid var(--border);
+    border-right: none;                 /* seamless seam between halves */
+    height: 100%;
+    display: grid;
+    place-items: center;                /* vertically center the content chunk */
+    }
+
+    .block .info-inner {
+    width: 100%;
+    max-width: var(--text-max);         /* keep text comfortable on ultrawide */
+    padding: 24px;
+
+    /* keep long lists from making the block taller */
+    max-height: calc(var(--block-h) - 48px);
+    overflow: auto; /* shows a small scroll if content exceeds the fixed height */
+    }
+
+    .block .info-inner h2 {
+    margin: 0 0 10px; font-size:14px; text-transform:uppercase; letter-spacing:.08em; color:var(--accent);
+    }
+
+    .block .info-inner ul { 
+    margin:0; padding-left:18px; 
+    }
+
+    .block .media {
+    border-left: 1px solid var(--border);  /* seam line */
+    overflow: hidden;
+    background: var(--panel2);
+    height: 100%;
+    }
+
+    .block .media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;                  /* fill the half; crop if needed (no distortion) */
+    object-position: center;
+    }
+
+    /* Mirror every odd block (image left, info right) */
+    .block.mirror .info { order: 2; border-right: 1px solid var(--border); border-left: none; }
+    .block.mirror .media { order: 1; border-left: none; }
+
+    /* Responsive: stack on mobile and drop full-bleed (no horizontal scroll) */
+    @media (max-width: 900px){
+    .topnav{ flex-direction:column; align-items:flex-start; gap:8px; }
+    .full-bleed { left:auto; right:auto; margin-left:0; margin-right:0; width:auto; }
+    .block { grid-template-columns: 1fr; height: auto; }
+    .block .info-inner { max-height: none; overflow: visible; }
+    .block .media img { aspect-ratio: 16/9; height: auto; } /* nicer on phones */
+    .hero--inline .hero-frame{width: 92vw; }
+    
+}
+  </style>
+</head>
+<body>
+    <div class="container">
+        <div class="topnav">
+            <div class="breadcrumb"><a href="/builds">Custom Builds</a> / <span><%= build.name %></span></div>
+                <a class="backlink" href="/builds">← Back to all builds</a>
+        </div>
+
+        <h1><%= build.name %></h1>
+        <% if (build.subtitle) { %><p class="sub"><%= build.subtitle %></p><% } %>     
+
+        <% if (build.hero_image) { %>
+            <section class="hero hero--inline">
+                <div class="hero-frame">
+                    <img class="hero-img" src="<%= build.hero_image %>" alt="<%= build.name %>">
+                    <div class="hero-overlay"></div>
+                </div>
+            </section>
+        <% } %>
+    </div>  
+
+  <div class="container">
+    <% if (blocks && blocks.length) { %>
+      <% blocks.forEach((blk, i) => { %>
+        <section class="block full-bleed <%= i % 2 === 1 ? 'mirror' : '' %>">
+            <div class="info">
+                <div class="info-inner">
+                <h2><%= blk.title %></h2>
+                <ul>
+                    <% (blk.items || []).forEach(it => { %>
+                    <li><%= it.text %></li>
+                    <% }) %>
+                </ul>
+                </div>
+            </div>
+            <div class="media">
+                <% if (blk.imageUrl) { %>
+                <img src="<%= blk.imageUrl %>" alt="<%= blk.imageAlt %>">
+                <% } %>
+            </div>
+        </section>
+
+      <% }) %>
+    <% } %>
+
+    <% if (extraPhotos && extraPhotos.length) { %>
+      <section>
+        <h2 style="font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:24px 0 8px">More photos</h2>
+        <div class="gallery">
+          <% extraPhotos.forEach(p => { %>
+            <img src="<%= p.url %>" alt="<%= p.alt || (build.name + ' photo') %>">
+          <% }) %>
+        </div>
+      </section>
+    <% } %>
+
+    <div class="cta">
+      <a class="btn" href="/contact">Start Your Build</a>
+    </div>
+  </div>
+    <script>
+(() => {
+  const frame = document.querySelector('.hero--inline .hero-frame');
+  const overlay = frame?.querySelector('.hero-overlay');
+  const firstInfo = document.querySelector('.block .info-inner');
+  const firstImg = document.querySelector('.block .media img');
+
+  if (!frame || !overlay || !firstInfo || !firstImg) return;
+
+  const FADE_SPEED = 1;
+
+  let initialScrollY = window.scrollY || window.pageYOffset || 0;
+  let docTop = 0;
+  let height = 1;
+  let fixed = false;
+  let spacer = null;
+
+  const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
+
+  function unfix() {
+    if (!fixed) return;
+    frame.style.position = '';
+    frame.style.left = '';
+    frame.style.top = '';
+    frame.style.width = '';
+    frame.style.zIndex = '';
+    if (spacer?.parentNode) spacer.remove();
+    spacer = null;
+    fixed = false;
+  }
+
+  function measureAndFix() {
+    unfix();
+
+    const rect = frame.getBoundingClientRect();
+    const scrollY = window.scrollY || window.pageYOffset || 0;
+
+    docTop = rect.top + scrollY - initialScrollY;
+    height = frame.offsetHeight || 1;
+
+    spacer = document.createElement('div');
+    spacer.style.height = height + 'px';
+    frame.parentNode.insertBefore(spacer, frame);
+
+    frame.style.position = 'fixed';
+    frame.style.left = rect.left + 'px';
+    frame.style.top  = (rect.top - initialScrollY) + 'px';
+    frame.style.width = rect.width + 'px';
+    frame.style.zIndex = '0';
+    fixed = true;
+
+    update();
+  }
+
+  function update() {
+    const y = window.scrollY || window.pageYOffset || 0;
+    const progress = clamp((y - docTop) / (height / FADE_SPEED), 0, 1);
+
+    overlay.style.opacity = progress.toFixed(3);
+    firstInfo.style.opacity = progress.toFixed(3);
+    firstImg.style.opacity = progress.toFixed(3);
+
+    firstInfo.style.transform = `translateY(${20 * (1 - progress)}px)`;
+    firstImg.style.transform = `translateY(${20 * (1 - progress)}px)`;
+  }
+
+  // Animate only the elements inside the block — not the layout container
+  [firstInfo, firstImg].forEach(el => {
+    el.style.opacity = '0';
+    el.style.transform = 'translateY(20px)';
+    el.style.transition = 'opacity 0.3s ease-out, transform 0.3s ease-out';
+  });
+
+  measureAndFix();
+  window.addEventListener('resize', measureAndFix, { passive: true });
+  window.addEventListener('load',   measureAndFix, { passive: true });
+  window.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
+})();
+</script>
+
+
+
+
+
+</body>
+</html>
