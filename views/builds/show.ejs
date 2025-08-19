@@ -34,17 +34,11 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 8px;
-    }
+      padding: 50px 24px;
+      background: #15181d;
+      position: relative;
+      z-index: 10;
 
-    .breadcrumb {
-      color: var(--muted);
-    }
-
-    .breadcrumb a {
-      color: var(--muted);
-      text-decoration: none;
-      border-bottom: 1px dashed var(--border);
     }
 
     .backlink {
@@ -71,34 +65,24 @@
       margin-right: -50vw;
     }
 
-    .hero--inline .hero-frame {
-      width: clamp(var(--hero-min-w), 66.666vw, var(--hero-max-w)); /* ~2/3 page */
-      height: var(--hero-h);
-      margin: 0 auto;                 /* CENTER it */
-      position: relative;
-      overflow: hidden;               /* clip to height */
-      /* no border/radius */
+    .hero {
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100vh;
+      width: 100vw;
+      overflow: hidden;
+      z-index: 0;
     }
 
-    .hero--inline .hero-img {
+    .hero-img {
       position: absolute;
       inset: 0;
       width: 100%;
       height: 100%;
       object-fit: cover;
       object-position: center;
-      display: block;
-      will-change: transform;
-    }
-
-    .hero--inline .hero-overlay {
-      position: absolute;
-      inset: 0;
-      background: #000;
-      opacity: 0;                     /* we’ll fade this only */
-      transition: opacity 80ms linear;
-      pointer-events: none;
-      will-change: opacity;
+      z-index: 0;
     }
 
 
@@ -126,7 +110,6 @@
 
 
     .hero-spacer {
-      height: 85px;
       background-color: transparent;
     }
 
@@ -157,7 +140,7 @@
 
     .block-fade {
       height: 20px;
-      background: linear-gradient(to top, #0b0d10, transparent);
+      background: linear-gradient(to top, #000000, transparent);
       width: 100vw;
       position: relative;
       left: 50%;
@@ -229,6 +212,8 @@
         gap: 8px;
       }
 
+    
+
       .full-bleed {
         left: auto;
         right: auto;
@@ -252,38 +237,37 @@
         height: auto;
       }
 
-      .hero--inline .hero-frame {
-        width: 92vw;
+    }
+    
+    @media (max-width: 600px) {
+      .hero-title {
+        font-size: 32px;
+        padding: 8px 16px;
       }
     }
+    
   </style>
 </head>
 <body>
   <div class="container">
     <div class="topnav">
-      <div class="breadcrumb"><a href="/builds">Custom Builds</a> / <span><%= build.name %></span></div>
       <a class="backlink" href="/builds">← Back to all builds</a>
     </div>
+    
 
-    <h1><%= build.name %></h1>
-    <% if (build.subtitle) { %><p class="sub"><%= build.subtitle %></p><% } %>
-
-    <% if (build.hero_image) { %>
-      <section class="hero hero--inline">
-        <div class="hero-frame">
-          <img class="hero-img" src="<%= build.hero_image %>" alt="<%= build.name %>">
-          <div class="hero-overlay"></div>
-        </div>
-      </section>
+  <section class="hero">
+    <img class="hero-img" src="<%= build.hero_image %>" alt="<%= build.name %>">
+  </section>
+  
 
       <div class="hero-spacer"></div>
 
       <div class="build-title-sticky">
-        Tim's 1969 Camaro RS
+        <% const firstName = build.owner_name?.split(' ')[0]; %>
+        <%= firstName %><%= firstName?.endsWith('s') ? "'" : "'s" %> <%= build.name %>
       </div>
     
 
-    <% } %>
   </div>
 
   <div class="container">
@@ -331,65 +315,28 @@
   </div>
 
   <script>
-    (() => {
-      const frame = document.querySelector('.hero--inline .hero-frame');
-      const overlay = frame?.querySelector('.hero-overlay');
+    function updateHeroSpacerHeight() {
+      const spacer = document.querySelector('.hero-spacer');
+      const topnav = document.querySelector('.topnav');
+      const title = document.querySelector('.build-title-sticky');
+      const fade = document.querySelector('.block-fade');
 
-      if (!frame || !overlay) return;
-
-      const FADE_SPEED = .9;
-      let initialScrollY = window.scrollY || window.pageYOffset || 0;
-      let docTop = 0;
-      let height = 1;
-      let fixed = false;
-      let spacer = null;
-
-      const clamp = (v, a, b) => v < a ? a : v > b ? b : v;
-
-      function unfix() {
-        if (!fixed) return;
-        frame.style.position = '';
-        frame.style.left = '';
-        frame.style.top = '';
-        frame.style.width = '';
-        frame.style.zIndex = '';
-        if (spacer?.parentNode) spacer.remove();
-        spacer = null;
-        fixed = false;
+      if (!spacer || !topnav || !title || !fade) {
+        console.warn("❌ One or more elements not found.");
+        return;
       }
 
-      function measureAndFix() {
-        unfix();
-        const rect = frame.getBoundingClientRect();
-        const scrollY = window.scrollY || window.pageYOffset || 0;
-        docTop = rect.top + scrollY - initialScrollY;
-        height = frame.offsetHeight || 1;
+      const totalOffset =
+        topnav.offsetHeight +
+        title.offsetHeight +
+        fade.offsetHeight;
 
-        spacer = document.createElement('div');
-        spacer.style.height = height + 'px';
-        frame.parentNode.insertBefore(spacer, frame);
+      spacer.style.height = `calc(100vh - ${totalOffset}px)`;
+      console.log(`✅ Spacer height set to: 100vh - ${totalOffset}px`);
+    }
 
-        frame.style.position = 'fixed';
-        frame.style.left = rect.left + 'px';
-        frame.style.top = (rect.top - initialScrollY) + 'px';
-        frame.style.width = rect.width + 'px';
-        frame.style.zIndex = '0';
-        fixed = true;
-
-        update();
-      }
-
-      function update() {
-        const scrollY = window.scrollY || window.pageYOffset || 0;
-        const p = clamp((scrollY - docTop) / (height / FADE_SPEED), 0, 1);
-        overlay.style.opacity = p.toFixed(3);
-      }
-
-      measureAndFix();
-      window.addEventListener('resize', measureAndFix, { passive: true });
-      window.addEventListener('load', measureAndFix, { passive: true });
-      window.addEventListener('scroll', () => requestAnimationFrame(update), { passive: true });
-    })();
-  </script>
+    window.addEventListener('load', updateHeroSpacerHeight);
+    window.addEventListener('resize', updateHeroSpacerHeight);
+</script>
 </body>
 </html>

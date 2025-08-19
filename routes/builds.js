@@ -3,6 +3,7 @@ const express = require('express');
 const router = express.Router();
 const db = require('../db');
 
+
 // GET /builds — list of builds (name + image)
 router.get('/', async (req, res, next) => {
   try {
@@ -24,7 +25,7 @@ router.get('/', async (req, res, next) => {
 router.get('/:slug', async (req, res, next) => {
   try {
     const { rows: buildRows } = await db.query(
-      `SELECT id, slug, name, subtitle, hero_image, thumb_image
+      `SELECT id, slug, name, subtitle, hero_image, thumb_image, owner_name
          FROM builds
         WHERE slug = $1 AND is_published = TRUE
         LIMIT 1`,
