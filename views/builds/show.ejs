@@ -73,6 +73,7 @@
       width: 100vw;
       overflow: hidden;
       z-index: 0;
+      transition: opacity 0.05s linear;
     }
 
     .hero-img {
@@ -110,6 +111,7 @@
 
 
     .hero-spacer {
+      height: 100vh;
       background-color: transparent;
     }
 
@@ -315,6 +317,7 @@
   </div>
 
   <script>
+    // Setting a Dynamic hero size so that it remains the same size on all displays!!
     function updateHeroSpacerHeight() {
       const spacer = document.querySelector('.hero-spacer');
       const topnav = document.querySelector('.topnav');
@@ -335,8 +338,29 @@
       console.log(`✅ Spacer height set to: 100vh - ${totalOffset}px`);
     }
 
+    // Fade hero image on scroll
+
+    function updateHeroOpacity() {
+      const hero = document.querySelector('.hero');
+      if (!hero) return;
+
+      const scrollY = window.scrollY;
+      const fadeDistance = 1000; // adjust this value as needed
+
+      let opacity = 1;
+      if (scrollY >= fadeDistance) {
+        opacity = 0;
+      } else {
+        opacity = 1 - (scrollY / fadeDistance);
+      }
+
+      hero.style.opacity = opacity.toFixed(3);
+    }
+
     window.addEventListener('load', updateHeroSpacerHeight);
     window.addEventListener('resize', updateHeroSpacerHeight);
+    window.addEventListener('scroll', updateHeroOpacity);
+    window.addEventListener('load', updateHeroOpacity);
 </script>
 </body>
 </html>
