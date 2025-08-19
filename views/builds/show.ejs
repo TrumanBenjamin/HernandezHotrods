@@ -88,7 +88,7 @@
       object-position: center;
       z-index: 0;
     }
-
+    
 
     .build-title-sticky {
       font-family: "Bebas Neue", sans-serif;
@@ -98,15 +98,17 @@
       text-shadow: 0 3px 4px rgba(0, 0, 0, 0.7);
       text-align: right;
       padding: 24px 48px 16px;
-      
 
       position: relative;
       z-index: 3;
 
       /* Constrain to right 2/3 of screen */
-      width: 66.666vw;
+      max-width: 66.666vw;
+      width: fit-content;
       margin-left: auto; /* pushes it to the right */
       margin-right: 0;
+      text-wrap: balance;
+      overflow-wrap: break-word;
 
       background: linear-gradient(to left, rgba(16, 19, 23, 0.85) 0%, transparent 100%);
       border-radius: 12px 0 0 12px;
