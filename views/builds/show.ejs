@@ -4,6 +4,9 @@
   <meta charset="utf-8">
   <title><%= title || 'Build' %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg: #0b0d10;
@@ -88,11 +91,14 @@
 
 
     .build-title-sticky {
-      font-size: 60px;
-      font-weight: 800;
-      color: var(--accent);
+      font-family: "Bebas Neue", sans-serif;
+      font-size: 120px;
+      font-weight: 400;
+      color: #d3cab9;
+      text-shadow: 0 3px 4px rgba(0, 0, 0, 0.7);
       text-align: right;
       padding: 24px 48px 16px;
+      
 
       position: relative;
       z-index: 3;
@@ -104,7 +110,7 @@
 
       background: linear-gradient(to left, rgba(16, 19, 23, 0.85) 0%, transparent 100%);
       border-radius: 12px 0 0 12px;
-      backdrop-filter: blur(6px);
+      backdrop-filter: blur(8px);
       box-shadow: -4px 4px 20px rgba(0,0,0,0.3);
     }
 
