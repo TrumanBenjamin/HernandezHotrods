@@ -1,33 +1,59 @@
-<%- include('../partials/header') %>
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title><%= title || 'Contact Us' %></title>
+  <meta name="viewport" content="width=device-width, initial-scale=1">
 
-<h1><%= title %></h1>
+  <!-- CSS -->
+  <link rel="stylesheet" href="/css/style.css">
 
-<% if (errors && errors.length > 0) { %>
-  <ul class="form-errors">
-    <% errors.forEach(error => { %>
-      <li><%= error %></li>
-    <% }) %>
-  </ul>
-<% } %>
+  <!-- Fonts (Optional) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+</head>
 
-<% if (success) { %>
-  <p class="form-success"><%= success %></p>
-<% } %>
+<body>
+  <!-- Include Site Header -->
+  <%- include('../partials/header') %>
 
-<form action="/contact" method="POST" novalidate>
-  <label>Name:</label>
-  <input type="text" name="name" value="<%= formData.name || '' %>" required minlength="2" />
+  <div class="container contact-page">
+    <h1><%= title || 'Contact Us' %></h1>
 
-  <label>Email:</label>
-  <input type="email" name="email" value="<%= formData.email || '' %>" required />
+    <% if (errors && errors.length > 0) { %>
+      <ul class="form-errors">
+        <% errors.forEach(error => { %>
+          <li><%= error %></li>
+        <% }) %>
+      </ul>
+    <% } %>
 
-  <label>Subject:</label>
-  <input type="text" name="subject" value="<%= formData.subject || '' %>" required minlength="3" />
+    <% if (success) { %>
+      <p class="form-success"><%= success %></p>
+    <% } %>
 
-  <label>Message:</label>
-  <textarea name="message" required minlength="10"><%= formData.message || '' %></textarea>
+    <form action="/contact" method="POST" novalidate class="contact-form">
+      <label for="name">Name:</label>
+      <input type="text" id="name" name="name" value="<%= formData.name || '' %>" required minlength="2" />
 
-  <button type="submit">Send Message</button>
-</form>
+      <label for="email">Email:</label>
+      <input type="email" id="email" name="email" value="<%= formData.email || '' %>" required />
 
-<%- include('../partials/footer') %>
+      <label for="subject">Subject:</label>
+      <input type="text" id="subject" name="subject" value="<%= formData.subject || '' %>" required minlength="3" />
+
+      <label for="message">Message:</label>
+      <textarea id="message" name="message" required minlength="10"><%= formData.message || '' %></textarea>
+
+      <button type="submit">Send Message</button>
+    </form>
+  </div>
+
+  <!-- Include Site Footer -->
+  <%- include('../partials/footer') %>
+
+  <!-- JavaScript -->
+  <script src="/js/main.js"></script>
+</body>
+</html>

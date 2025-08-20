@@ -4,9 +4,14 @@
   <meta charset="utf-8">
   <title><%= title || 'Custom Builds' %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
+
   <style>
     /* tiny, temporary styles so you can "see" the grid */
-    body { margin: 0; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0d10; color:#f1f5f9; }
+    body { margin-top: 100px; font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; background:#0b0d10; color:#f1f5f9; }
     .container { max-width: 1100px; margin: 0 auto; padding: 24px; }
     h1 { margin: 0 0 8px; }
     p.sub { color:#9aa3af; margin:0 0 24px; }
@@ -21,6 +26,7 @@
   </style>
 </head>
 <body>
+  <%- include('../partials/header') %>
   <div class="container">
     <h1>Custom Builds</h1>
     <p class="sub">A few recent favorites.</p>
@@ -47,5 +53,6 @@
       </div>
     <% } %>
   </div>
+<script src="/js/main.js"></script>
 </body>
 </html>

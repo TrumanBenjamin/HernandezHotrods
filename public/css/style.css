@@ -1,5 +1,5 @@
 body {
-  background-color: darkgray;
+  background-color: #0b0d10;
 }
 .services-list {
   display: grid;
@@ -49,15 +49,23 @@ label {
   margin-bottom: 1rem;
 }
 
+/* ------------- */
 /* Header styles */
 .site-header {
-  background: linear-gradient(to left, rgba(16, 19, 23, 0.85));
   padding: 16px 24px;
-  position: relative;
-  z-index: 10;
-  background: linear-gradient(to left, rgba(16, 19, 23, 0.85) 0%, rgba(16, 19, 23, 0.473) 50%, rgba(16, 19, 23, 0.85) 100%);
-  /* backdrop-filter: blur(8px); */
+  box-sizing: border-box;
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  z-index: 1001;
+  background: linear-gradient(to left, rgb(10 10 10) 0%, rgb(0 0 0 / 90%) 50%, rgb(10 10 10) 100%);
   box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
+  transition: transform 0.3s ease-in-out;
+}
+
+.hide-header {
+  transform: translateY(-100%);
 }
 
 .nav-inner {
@@ -72,13 +80,44 @@ label {
 }
 
 .nav-toggle {
-  font-size: 28px;
+  width: 32px;
+  height: 24px;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
   background: none;
-  color: #fff;
   border: none;
   cursor: pointer;
-  z-index: 1001;
+  z-index: 10001;
+  gap: 5px; /* spacing between bars */
 }
+
+.nav-toggle .bar {
+  height: 2px;
+  width: 100%;
+  background-color: #f1f5f9;
+  border-radius: 2px;
+  transition: all 0.3s ease;
+  transform-origin: center;
+}
+
+/* Open state */
+.nav-toggle.open .bar:nth-child(1) {
+  transform: rotate(45deg) translate(5px, 5px);
+}
+
+.nav-toggle.open .bar:nth-child(2) {
+  opacity: 0;
+  transform: scaleX(0);
+}
+
+.nav-toggle.open .bar:nth-child(3) {
+  transform: rotate(-45deg) translate(5px, -5px);
+}
+
+
 
 .nav-links {
   position: fixed;
@@ -86,15 +125,14 @@ label {
   right: -100%; /* Start off screen */
   height: 100vh;
   width: 250px;
-  background: linear-gradient(
-    to left,
-    rgba(5, 5, 5, 0.919) 0%,   /* match overlay */
-    rgba(16, 19, 23, 0.8) 30%,
-    rgba(16, 19, 23, 0.475) 80%,
-    transparent 100%
+  background: linear-gradient(to left, 
+  rgb(5 5 5 / 97%) 0%,
+  rgb(5 5 5 / 90%) 20%,
+  rgb(5 5 5 / 80%) 40%,
+  rgb(5 5 5 / 70%) 60%,
+  rgb(5 5 5 / 35%) 80%,
+  rgb(5 5 5 / 0%) 100%
   );
-  z-index: 1000;
-
   display: flex;
   flex-direction: column;
   justify-content: center;
@@ -106,7 +144,7 @@ label {
 
 .nav-links a {
   font-family: "Bebas Neue", sans-serif;
-  font-size: 32px;
+  font-size: 40px;
   letter-spacing: 0.08em;
   color: #b2b2b2;
   text-decoration: none;
@@ -115,6 +153,7 @@ label {
   transition: color 0.2s ease-in-out;
   display: inline-block;
   position: relative;
+  will-change: transform;
 }
 
 .nav-links a::after {
@@ -152,13 +191,105 @@ label {
   backdrop-filter: blur(2px); /* optional for extra softness */
   opacity: 0;
   pointer-events: none;
-  transition: opacity 0.7s ease;
+  transition: opacity 0.5s ease;
   z-index: 999; /* Below nav panel (z-1000), above rest of page */
 }
 
 .nav-overlay.open {
-  opacity: 0.8;
+  opacity: .9;
   pointer-events: all;
 }
 
 
+/* ------------ */
+/* Contact Page */
+form {
+  max-width: 600px;
+  margin: 100px auto;
+  background-color: #15181d;
+  padding: 24px;
+  border-radius: 12px;
+  border: 1px solid #232831;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.6);
+  color: #e2e8f0;
+  font-family: system-ui, sans-serif;
+  box-sizing: border-box;
+  width: 100%;
+}
+
+form * {
+  box-sizing: border-box;
+}
+
+form label {
+  display: block;
+  margin-top: 16px;
+  margin-bottom: 6px;
+  font-size: 14px;
+  color: #cbd5e1;
+  letter-spacing: 0.05em;
+}
+
+form input,
+form textarea {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1px solid #2e343c;
+  border-radius: 8px;
+  background-color: #0f1115;
+  color: #f1f5f9;
+  font-size: 16px;
+  resize: vertical;
+  min-height: 40px;
+  transition: border 0.2s ease, box-shadow 0.2s ease;
+}
+
+form textarea {
+  min-height: 100px;
+}
+
+form input:focus,
+form textarea:focus {
+  border-color: #94a3b8;
+  box-shadow: 0 0 0 3px rgba(147, 197, 253, 0.2);
+  outline: none;
+}
+
+form button[type="submit"] {
+  margin-top: 24px;
+  background-color: #cfd8e3;
+  color: #0b0d10;
+  border: none;
+  padding: 12px 20px;
+  font-size: 16px;
+  border-radius: 999px;
+  cursor: pointer;
+  width: 100%;
+  transition: background 0.2s ease;
+}
+
+form button[type="submit"]:hover {
+  background-color: #e2e8f0;
+}
+
+.form-errors,
+.form-success {
+  padding: 12px;
+  margin-bottom: 20px;
+  border-radius: 8px;
+  width: 100%;
+}
+
+.form-errors {
+  background-color: #3b0d0c;
+  color: #f8d7da;
+  border: 1px solid #842029;
+  list-style-type: disc;
+  padding-left: 24px;
+}
+
+.form-success {
+  background-color: #0f5132;
+  color: #d1e7dd;
+  border: 1px solid #0f5132;
+}
