@@ -1,16 +1,23 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-  <meta charset="UTF-8">
-  <title><%= title %></title>
-  <link rel="stylesheet" href="/css/style.css">
-</head>
-<body>
-  <header>
-    <nav>
+
+<header class="site-header">
+  <div class="nav-inner">
+    <div class="nav-logo">
+      <a href="/">
+        <img src="/images/logo/hhrlogot.png" alt="Hernandez Hot Rods Logo">
+      </a>
+    </div>
+
+    <button class="nav-toggle" aria-label="Toggle navigation">
+      &#9776; <!-- Hamburger icon -->
+    </button>
+
+    <nav class="nav-links"  >
       <a href="/">Home</a>
-      <a href="/services">Services</a>
+      <a href="/builds">Builds</a>
+      <a href="/shop">Shop</a>
       <a href="/contact">Contact</a>
-      <!-- Add other nav links as needed -->
     </nav>
-  </header>
+    <div class="nav-overlay"></div>
+  </div>
+
+</header>

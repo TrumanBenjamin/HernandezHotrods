@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <title><%= title || 'Build' %></title>
   <meta name="viewport" content="width=device-width, initial-scale=1">
+  <link rel="stylesheet" href="/css/style.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&display=swap" rel="stylesheet">
@@ -103,7 +104,7 @@
       z-index: 3;
 
       /* Constrain to right 2/3 of screen */
-      max-width: 66.666vw;
+      max-width: 66.67vw;
       width: fit-content;
       margin-left: auto; /* pushes it to the right */
       margin-right: 0;
@@ -260,9 +261,8 @@
 </head>
 <body>
   <div class="container">
-    <div class="topnav">
-      <a class="backlink" href="/builds">← Back to all builds</a>
-    </div>
+    <%- include('../partials/header') %>
+
     
 
   <section class="hero">
@@ -325,10 +325,27 @@
   </div>
 
   <script>
+    // Dynamic hamburger button nav links
+    document.addEventListener('DOMContentLoaded', function () {
+      const toggle = document.querySelector('.nav-toggle');
+      const navLinks = document.querySelector('.nav-links');
+      const overlay = document.querySelector('.nav-overlay');
+
+      toggle.addEventListener('click', () => {
+        navLinks.classList.toggle('open');
+        overlay.classList.toggle('open');
+      });
+
+      overlay.addEventListener('click', () => {
+        navLinks.classList.remove('open');
+        overlay.classList.remove('open');
+      });
+    });
+
     // Setting a Dynamic hero size so that it remains the same size on all displays!!
     function updateHeroSpacerHeight() {
       const spacer = document.querySelector('.hero-spacer');
-      const topnav = document.querySelector('.topnav');
+      const topnav = document.querySelector('.site-header');
       const title = document.querySelector('.build-title-sticky');
       const fade = document.querySelector('.block-fade');
 

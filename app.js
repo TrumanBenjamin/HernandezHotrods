@@ -8,6 +8,7 @@ app.use(express.static(path.join(__dirname, 'public')));
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
+
 const staticRoutes = require('./routes/staticRoutes');
 app.use('/', staticRoutes);
 
