@@ -1,0 +1,41 @@
+<main>
+
+  <div class="buildgrid">
+    <div class="builds-title-wrap">
+      <h1 class="builds-title"><span>Current Builds</span></h1>
+    </div>  
+
+    <% if (!builds || builds.length === 0) { %>
+      <div class="empty">No builds yet. Add some rows in the database and refresh.</div>
+    <% } else { %>
+      <div class="grid">
+        <% builds.forEach(b => { %>
+          <div class="card">
+            <a href="/builds/<%= b.slug %>" class="cardlink">
+              <figure class="thumbwrap" aria-label="<%= b.name %>">
+                <% if (b.image) { %>
+                  <img class="thumb" src="<%= b.image %>" alt="<%= b.name %>">
+                <% } else { %>
+                  <div class="thumb placeholder"></div>
+                <% } %>
+              </figure>
+
+              <!-- slides OUT to the right -->
+              <div class="meta meta-info">
+                <div class="meta-box">
+                  <h2 class="name"><%= b.name %></h2>
+                </div>
+              </div>
+
+              <!-- CTA: slides IN from the right on hover -->
+              <div class="meta meta-cta" aria-hidden="true">
+                <div class="meta-box"><span class="cta">See more →</span></div>
+              </div>
+            </a>
+          </div>
+        <% }) %>
+      </div>
+    <% } %>
+  </div>
+
+</main>

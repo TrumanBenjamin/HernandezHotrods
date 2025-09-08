@@ -2,6 +2,12 @@ const express = require('express');
 const app = express();
 const path = require('path');
 require('dotenv').config();
+const expressLayouts = require('express-ejs-layouts');
+
+// Will use views/layout.ejs
+app.use(expressLayouts);
+app.set('layout', 'layout'); 
+
 
 // Middleware
 app.use(express.static(path.join(__dirname, 'public')));
@@ -22,11 +28,11 @@ app.use('/contact', contactRoute);
 app.set('view engine', 'ejs');
 app.set('views', path.join(__dirname, 'views'));
 
+// Routes
 // mount the builds router
 const buildsRouter = require('./routes/builds');
 app.use('/builds', buildsRouter);
 
-// Routes
 const homeRoutes = require('./routes/homeRoutes');
 app.use('/', homeRoutes);
 

@@ -1,0 +1,127 @@
+<main class="contact-split">
+  <!-- LEFT: media  -->
+  <aside class="contact-media">
+    <video class="media-video" autoplay muted loop playsinline>
+      <source src="/media/nova.mp4" type="video/mp4" />
+    </video>
+   
+  </aside>
+
+  <!-- RIGHT: panel -->
+  <section class="contact-panel angle-caps">
+    <header class="contact-header">
+      <h1>Contact Us</h1>
+      <p class="sub">
+        If you have any questions, or you're ready to pull the trigger on your dream build,
+        we’d love to hear from you!
+      </p>
+    </header>
+
+    <!-- Business info
+    <div class="biz-info">
+      <div class="info-block">
+        <span class="label">Address</span>
+        <p>905 Jet Stream Drive<br />Rexburg, ID 83440</p>
+      </div>
+      <div class="info-block">
+        <span class="label">Email</span>
+        <p><a href="mailto:info@hernandezhotrods.com">info@hernandezhotrods.com</a></p>
+      </div>
+      <div class="info-block">
+        <span class="label">Phone</span>
+        <p><a href="tel:+12089138203">(208) 913-8203</a></p>
+      </div>
+      <div class="info-block">
+        <span class="label">Hours</span>
+        <p>Mon–Thurs: 7:00a–6:00p</p>
+      </div>
+    </div> -->
+
+    <!-- Flash / errors -->
+    <% if (errors && errors.length > 0) { %>
+      <ul class="form-flash form-errors">
+        <% errors.forEach(error => { %>
+          <li><%= error %></li>
+        <% }) %>
+      </ul>
+    <% } %>
+
+    <% if (success) { %>
+      <p class="form-flash form-success"><%= success %></p>
+    <% } %>
+
+    <!-- Contact form -->
+    <form action="/contact" method="POST" novalidate class="contact-form slim">
+      <div class="row two-col">
+        <div class="field">
+          <label for="name">Full Name</label>
+          <input
+            type="text"
+            id="name"
+            name="name"
+            placeholder=""
+            value="<%= formData?.name || '' %>"
+            required
+            minlength="2"
+          />
+        </div>
+
+        <div class="field">
+          <label for="email">Email Address</label>
+          <input
+            type="email"
+            id="email"
+            name="email"
+            placeholder=""
+            value="<%= formData?.email || '' %>"
+            required
+          />
+        </div>
+      </div>
+
+
+      <div class="field">
+        <label for="vehicle">Vehicle Info <span class="optional">(optional)</span></label>
+        <input
+          type="text"
+          id="vehicle"
+          name="vehicle"
+          placeholder="Year, make, model, engine, etc."
+          value="<%= formData?.vehicle || '' %>"
+        />
+      </div>
+
+      <div class="field">
+        <label for="message">Message</label>
+        <textarea
+          id="message"
+          name="message"
+          placeholder="Tell us about your project..."
+          required
+          minlength="10"
+        ><%= formData?.message || '' %></textarea>
+      </div>
+
+      <button type="submit" class="btn-send"><span>Send</span></button>
+    </form>
+
+    <div class="more-info">
+      More information, like our address and phone number, available 
+      <a href="https://share.google/RlZZ6wbnBc6wLkito">here.</a>
+    </div>
+  </section>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const alerts = document.querySelectorAll('.form-flash');
+      if (alerts.length > 0) {
+        setTimeout(() => {
+          alerts.forEach(el => {
+            el.classList.add('fade-out');
+            setTimeout(() => el.remove(), 1000);
+          });
+        }, 5000);
+      }
+    });
+  </script>
+</main>
