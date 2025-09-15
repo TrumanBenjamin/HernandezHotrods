@@ -1,12 +1,63 @@
 document.addEventListener('DOMContentLoaded', function () {
   
+  // ===== Lazy gallery loader (4 concurrent) =====
+  (function () {
+    const MAX_CONCURRENCY = 4;
+    let inFlight = 0;
+    const queue = [];
+
+    const loadImg = (img) => {
+      if (!img.dataset.src) return;
+      inFlight++;
+      const done = () => {
+        inFlight = Math.max(0, inFlight - 1);
+        img.classList.add('is-loaded');
+        processQueue();
+      };
+      img.onload = done;
+      img.onerror = done;
+      img.src = img.dataset.src;
+      img.removeAttribute('data-src');
+    };
+
+    const processQueue = () => {
+      while (inFlight < MAX_CONCURRENCY && queue.length) {
+        loadImg(queue.shift());
+      }
+    };
+
+    const lazyImgs = Array.from(document.querySelectorAll('.gallery-grid img.lazy'));
+    if (!lazyImgs.length) return;
+
+    const io = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (!entry.isIntersecting) return;
+        const img = entry.target;
+        io.unobserve(img);
+        queue.push(img);
+        processQueue();
+      });
+    }, { rootMargin: '300px 0px', threshold: 0.01 });
+
+    lazyImgs.forEach((img) => io.observe(img));
+  })();
+  // end of lazy loader
+
+
 
   // Global page reveal (waits for DOM + images + CSS background images, with a short fallback)
-(function () {
+  (function () {
   const docEl = document.documentElement;
 
   // Collect <img> tags
-  const imgs = Array.from(document.images);
+  let imgs = Array.from(document.images);
+  // If we are on the home page, skip the hero + nav logos
+  if (document.body.classList.contains('is-home')) {
+    imgs = imgs.filter(img =>
+      !img.classList.contains('hero-logo') &&
+      !img.classList.contains('nav-logo')
+    );
+  }
 
   // Collect elements that use CSS background images
   const bgEls = Array.from(document.querySelectorAll('.bg-image'));
@@ -116,34 +167,48 @@ document.addEventListener('DOMContentLoaded', function () {
 
   // ────── Scroll-Hide Header ──────
   const header = document.querySelector('.site-header');
-    let lastScrollY = window.scrollY;
-    let ticking = false;
-    const scrollThreshold = 10; // Prevents jittery toggling
+  let lastScrollY = window.scrollY;
+  let ticking = false;
+  const scrollThreshold = 10; // Prevents jittery toggling
 
-    if (header) {
-      window.addEventListener('scroll', () => {
-        if (document.body.classList.contains('no-scroll')) return; // 👈 Don't trigger scroll logic when nav is open
+  if (header) {
+    window.addEventListener('scroll', () => {
+      if (document.body.classList.contains('no-scroll')) return; // don't run when nav is open
 
-        if (!ticking) {
-          window.requestAnimationFrame(() => {
-            const currentScroll = window.scrollY;
+      const doc = document.documentElement;
+      const currentScroll = window.scrollY;
+      const scrollTop = doc.scrollTop || window.pageYOffset;
+      const scrollHeight = doc.scrollHeight;
+      const viewport = window.innerHeight;
+      const atBottom = scrollTop + viewport >= scrollHeight - 2;
 
-            if (Math.abs(currentScroll - lastScrollY) >= scrollThreshold) {
-              if (currentScroll > lastScrollY && currentScroll > 100) {
-                header.classList.add('hide-header');
-              } else {
-                header.classList.remove('hide-header');
-              }
-              lastScrollY = currentScroll;
-            }
-
+      if (!ticking) {
+        window.requestAnimationFrame(() => {
+          // Always show header at the bottom (works even on a straight scroll down)
+          if (atBottom) {
+            header.classList.remove('hide-header');
+            lastScrollY = currentScroll; // keep state in sync
             ticking = false;
-          });
+            return;
+          }
 
-          ticking = true;
-        }
-      });
-    }
+          // Direction/threshold logic elsewhere
+          if (Math.abs(currentScroll - lastScrollY) >= scrollThreshold) {
+            if (currentScroll > lastScrollY && currentScroll > 100) {
+              header.classList.add('hide-header');    // scrolling down
+            } else {
+              header.classList.remove('hide-header');  // scrolling up
+            }
+            lastScrollY = currentScroll;
+          }
+
+          ticking = false;
+        });
+        ticking = true;
+      }
+    }, { passive: true });
+  }
+
 
 
 
@@ -151,20 +216,18 @@ document.addEventListener('DOMContentLoaded', function () {
   const spacer = document.querySelector('.hero-spacer');
   const topnav = document.querySelector('.site-header');
   const title = document.querySelector('.build-title-sticky');
-  const fade = document.querySelector('.block-fade');
   const hero = document.querySelector('.hero');
 
-  if (spacer && topnav && title && fade && hero) {
+  if (spacer && topnav && title && hero) {
     function updateHeroSpacerHeight() {
         requestAnimationFrame(() => {
+            const heroHeight = hero.offsetHeight;
             const titleHeight = title.offsetHeight;
-            const fadeHeight = fade.offsetHeight;
             const topnavHeight = topnav.offsetHeight;
 
             const totalOffset = titleHeight;
 
             spacer.style.height = `calc(100vh - ${totalOffset}px)`;
-            console.log(`fadeHeight = ${fadeHeight}`)
             console.log(`titleHeight = ${titleHeight}`)
             console.log(`✅ Spacer height set to: 100vh - ${totalOffset}px`);
         });
@@ -186,6 +249,11 @@ document.addEventListener('DOMContentLoaded', function () {
       }
 
       hero.style.opacity = opacity.toFixed(3);
+      if (opacity <= 0) {
+        hero.style.display = 'none';
+      } else {
+        hero.style.display ='';
+      }
     }
 
     window.addEventListener('load', updateHeroSpacerHeight);

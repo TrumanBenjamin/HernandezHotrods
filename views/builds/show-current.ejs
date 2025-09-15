@@ -1,0 +1,50 @@
+
+<main>
+  <!-- Full-page hero + sticky title (reused) -->
+  <%- include('../partials/build_hero') %>
+
+  <!-- Compact info block -->
+  <div class="wip-section">
+    <section class="wip-intro container" data-animate>
+      <h2 class="wip-heading">About this build</h2>
+      <p class="wip-paragraph">
+        <%= build.about || build.subtitle || `We’re bringing ${build.name} up to modern reliability and performance while keeping its original character.` %>
+      </p>
+      include
+
+      <% if (build.plans) { %>
+        <h3 class="wip-subheading">Plan</h3>
+        <p class="wip-paragraph"><%= build.plans %></p>
+      <% } %>
+    </section>
+
+    
+  
+    <section class="gallery-grid" data-animate>
+      <% extraPhotos.forEach((p, i) => { %>
+        <figure class="gallery-item">
+          <% if (i < 4) { %>
+            <img
+              src="<%= p.url %>"
+              alt="<%= p.alt || (build.name + ' photo') %>"
+              loading="eager"
+              decoding="async">
+          <% } else { %>
+            <img
+              class="lazy"
+              data-src="<%= p.url %>"
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+              alt="<%= p.alt || (build.name + ' photo') %>"
+              loading="lazy"
+              decoding="async"
+              fetchpriority="low">
+          <% } %>
+        </figure>
+      <% }) %>
+    </section>
+    
+    <%- include('../partials/startbuild') %>
+
+  </div>  
+</main>
+

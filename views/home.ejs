@@ -1,6 +1,100 @@
 <main>
+  <!-- Home: Video Hero -->
+  <section class="home-hero" aria-label="Hero video with logo">
+    <div class="hero-top">
+      <video class="hero-video" autoplay muted loop playsinline preload="metadata" poster="/images/mustang.jpg">
+        <source src="/media/chevelle.mp4" type="video/mp4" />
+      </video>
+      <div class="hero-scrim" aria-hidden="true"></div>
 
-  <h1><%= title %></h1>
-  <p>This is the homepage for our company website!</p>
+      <!-- Centered logo inside the 80vh area -->
+      <div class="hero-overlay">
+        <img class="hero-logo" src="/images/logo/hhrlogot.png" alt="Hernandez Hot Rods & Customs" />
+      </div>
+    </div>
+
+    <div class="btp">
+      <img src="/images/logo/builttoperform.png" alt="">
+    </div>
+
+  </section>
+
+  <!-- Band A: color left, info left -->
+  <section class="band band--left">
+    <div class="band-inner">
+      <div class="band-info">
+        <h2 class="band-title">About Us</h2>
+        <p class="band-text">Located in Rexburg, ID...</p>
+      </div>
+      <div class="band-media">
+        <div class="band-media-inner">
+          <img src="/images/about-us.jpg" alt="About Hernandez Hot Rods" />
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Band B: color right, info right -->
+  <section class="band band--right">
+    <div class="band-inner">
+      <div class="band-media">
+        <div class="band-media-inner">
+          <img src="/images/team.jpg" alt="Team" />
+        </div>
+      </div>  
+      <div class="band-info">
+        <h2 class="band-title">Meet The Team</h2>
+        <p class="band-text">In this industry, the team matters most...</p>
+      </div>
+      
+    </div>
+  </section>
+
+  <section class="social-feed" aria-label="Instagram feed">
+    <div class="social-inner"> 
+      <header class="social-head"> 
+        <h2 class="social-title">Latest on Instagram</h2>
+        <a class="social-link" href="https://www.instagram.com/<your-username>/" target="_blank" rel="noopener">Follow us</a>
+      </header>
+
+      <div class="social-grid">
+        <% (igPosts || []).forEach(p => { %>
+          <a class="social-card" href="<%= p.permalink %>" target="_blank" rel="noopener" aria-label="Open Instagram post">
+            <img src="<%= p.image %>" alt="<%= p.caption ? p.caption.replace(/\s+/g,' ').slice(0,120) : 'Instagram image' %>">
+          </a>
+        <% }) %>
+
+        <% if (!igPosts || igPosts.length === 0) { %>
+          <p class="social-empty">No posts to display right now.</p>
+        <% } %>
+      </div>
+    </div>
+  </section>
+
+    <!-- Band A: color left, info left -->
+  <section class="band band--left">
+    <div class="band-inner">
+      <div class="band-info">
+        <h2 class="band-title">Vehicles For Sale</h2>
+        <p class="band-text">Looking for a new whip?</p>
+      </div>
+      <div class="band-spacer" aria-hidden="true"></div>
+    </div>
+  </section>
+
+  <!-- Band B: color right, info right -->
+  <section class="band band--right">
+    <div class="band-inner">
+      <div class="band-spacer" aria-hidden="true"></div>
+      <div class="band-info">
+        <h2 class="band-title">Merchandise</h2>
+        <p class="band-text">We'll get you decked out and looking your best.</p>
+      </div>
+    </div>
+  </section>
+
+
+
+
   
 </main>

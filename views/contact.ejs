@@ -17,26 +17,6 @@
       </p>
     </header>
 
-    <!-- Business info
-    <div class="biz-info">
-      <div class="info-block">
-        <span class="label">Address</span>
-        <p>905 Jet Stream Drive<br />Rexburg, ID 83440</p>
-      </div>
-      <div class="info-block">
-        <span class="label">Email</span>
-        <p><a href="mailto:info@hernandezhotrods.com">info@hernandezhotrods.com</a></p>
-      </div>
-      <div class="info-block">
-        <span class="label">Phone</span>
-        <p><a href="tel:+12089138203">(208) 913-8203</a></p>
-      </div>
-      <div class="info-block">
-        <span class="label">Hours</span>
-        <p>Mon–Thurs: 7:00a–6:00p</p>
-      </div>
-    </div> -->
-
     <!-- Flash / errors -->
     <% if (errors && errors.length > 0) { %>
       <ul class="form-flash form-errors">
@@ -51,7 +31,7 @@
     <% } %>
 
     <!-- Contact form -->
-    <form action="/contact" method="POST" novalidate class="contact-form slim">
+    <form action="/contact" method="POST" novalidate class="contact-form slim" enctype="multipart/form-data">
       <div class="row two-col">
         <div class="field">
           <label for="name">Full Name</label>
@@ -102,6 +82,17 @@
         ><%= formData?.message || '' %></textarea>
       </div>
 
+      <div class="field">
+        <input
+          type="file"
+          id="photos"
+          name="photos"
+          accept="image/*"
+          multiple
+        />
+        <small>PNG/JPG/WebP. Limit 5.</small>
+      </div>
+
       <button type="submit" class="btn-send"><span>Send</span></button>
     </form>
 
@@ -123,5 +114,12 @@
         }, 5000);
       }
     });
+      // client-side guard (nice UX, server still validates)
+  document.getElementById('photos')?.addEventListener('change', (e) => {
+    if (e.target.files.length > 5) {
+      alert('Please select at most 5 images.');
+      e.target.value = ''; // reset selection
+    }
+  });
   </script>
 </main>

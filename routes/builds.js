@@ -54,7 +54,7 @@ router.get('/completed', async (req, res, next) => {
 router.get('/:slug', async (req, res, next) => {
   try {
     const { rows: buildRows } = await db.query(
-      `SELECT id, slug, name, subtitle, hero_image, thumb_image, owner_name
+      `SELECT id, slug, name, subtitle, hero_image, thumb_image, owner_name, is_completed::boolean AS is_completed
        FROM builds
        WHERE slug = $1 AND is_published = TRUE
        LIMIT 1`,
@@ -100,7 +100,9 @@ router.get('/:slug', async (req, res, next) => {
 
     const extraPhotos = photos.slice(blocks.length);
 
-    res.render('builds/show', {
+    const view = build.is_completed ? 'builds/show' : 'builds/show-current';
+
+    res.render(view, {
       title: build.name,
       build,
       blocks,

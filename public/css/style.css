@@ -23,7 +23,7 @@ img {
   will-change: opacity, transform;
 }
 
-html.is-ready img.is-loaded,
+html.is-ready img.is-loaded, 
 html.is-ready {
   opacity: 1;
   transform: none;
@@ -32,6 +32,7 @@ html.is-ready {
 
 /* (Nice to have) stop all other transitions while loading to avoid weird pops */
 html.is-loading * { transition: none !important; animation-play-state: paused !important; }
+
 
 /* end of JS page load */
 
@@ -307,14 +308,15 @@ footer {
     .block,
     .gallery,
     .cta {
-      position: relative;
+      position: relative; 
       z-index: 2;
     }
 .cta.reveal {
   padding: 70px 0;
-  background-color: #080808;
+  background-color: #070707;
   border: 1px solid #141414;
 }
+
 
 
     .block {
@@ -322,72 +324,60 @@ footer {
       grid-template-columns: 1fr 1fr;
       align-items: strex  tch;
       height: var(--block-h);
+      position: relative;
+      z-index: 2;
+    }
+    .block::before {
+      content: "";
+      position: absolute;
+      inset: 0;             /* cover the whole block */
+      background: #070707;  /* solid backdrop */
+      z-index: -1;          /* sits behind block content, but above hero */
     }
 
     .block-fade {
       background: linear-gradient(to top, #15181d, transparent);
-      width: 100vw;
+      width: 100%;
       position: relative;
       left: 50%;
       right: 50%;
-      margin-left: -50vw;
-      margin-right: -50vw;
+      margin-left: -50%;
+      margin-right: -50%;
     }
 
 
 /* ——— Info block (combined + simplified) ——— */
 /* ——— Info block (combined + simplified, static) ——— */
 
+
 .block .info {
-  background: #0b0d10;
+  position: relative;
+  z-index: 3;
   border-right: none;
   height: 100%;
   display: grid;
-  place-items: center;
-
-  /* polish */
-  position: relative;
   isolation: isolate;
-  box-shadow:
-    inset 0 1px 0 rgba(255,255,255,0.04),
-    inset 0 -1px 0 rgba(0,0,0,0.25);
+  box-shadow: inset 0 0 20px 0 rgba(0, 0, 0, .55);
+  background: linear-gradient(180deg,
+    color-mix(in oklab, #575555 51%, #2b2b2b) 0%, #070707 100%);
 }
 
+/* thin accent rail on the left */
 .block .info::before {
-  /* thin accent rail on the left */
-  content: "";
+  /* content: ""; it disappear */
   position: absolute;
-  inset: 0 auto 0 0;
+  inset: calc(10% + 26px) 0 0 auto;
   width: 6px;
-  background: linear-gradient(
-    180deg,
-    color-mix(in oklab, var(--accent) 85%, transparent),
-    transparent
-  );
-  opacity: 0.6;
+  background:  linear-gradient(0deg,
+    color-mix(in oklab, #2b2a2a 51%, #474747) 0%,
+    color-mix(in oklab, #8f8f8f 51%, transparent) 10%, transparent 100%);
+  z-index: 1;
+  box-shadow: inset 0 0 5px 0 rgba(0, 0, 0, .55);
 }
 
-.block .info-inner {
-  width: 100%;
-  max-width: var(--text-max);
-  max-height: calc(var(--block-h) - 48px);
-  overflow: auto;
-
-  /* spacing tuned to clear the rail */
-  padding: 28px 28px 24px 32px;
-
-  /* matching scrollbar */
-  scrollbar-width: thin;
-  scrollbar-color: var(--accent) rgba(255,255,255,0.06);
-}
-.block .info-inner::-webkit-scrollbar { width: 8px; }
-.block .info-inner::-webkit-scrollbar-thumb {
-  background: var(--accent);
-  border-radius: 8px;
-}
-.block .info-inner::-webkit-scrollbar-track {
-  background: rgba(255,255,255,0.04);
-  border-radius: 8px;
+/* Override for mirrored blocks: rail on the right */
+.block.mirror .info::before {
+  inset: calc(10% + 26px) 0 0 auto;  /* top:0, right:0, bottom:0, left:auto */
 }
 
 /* keep these shared constraints compact */
@@ -400,53 +390,81 @@ footer {
   box-sizing: border-box;
 }
 
-/* Section label (compact chip) */
-.block .info-inner h2 {
-  margin: 0 0 14px;
-  display: inline-flex;
-  align-items: center;
-  gap: 10px;
-  padding: 6px 12px;
-  font-size: clamp(12px, 1.2vw, 13px);
-  letter-spacing: 0.08em;
-  text-transform: uppercase;
-  color: var(--accent);
-  background: rgba(255,255,255,0.03);
-  border: 1px solid var(--border);
-  border-left: 4px solid var(--accent);
-  border-radius: 8px;
+.block .info-inner {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
 }
 
-/* List: clean spec look */
-.block .info-inner ul {
-  margin: 0;
-  padding: 0;
-  list-style: none;
-  display: grid;
-  gap: 10px;
-}
-.block .info-inner li {
+/* Section label (compact chip) */
+.block .info-inner h2 {
   position: relative;
-  padding-left: 22px;
-  color: rgba(207,216,227,0.88);
-  font-size: clamp(14px, 1.3vw, 15.5px);
-  line-height: 1.45;
+  z-index: 1;
+  margin: 0 0;
+  height: 17%;
+  padding: 0 30px;
+  font-size: clamp(20px, 50px, 50px);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  overflow: hidden;
+  color: #cfd8e3;
+  background: linear-gradient(270deg, #070707, transparent);
+  /* text-shadow: 0 0 50px #ffffff; */
+  display: flex;
+  align-items: center;  
+  font-weight: 500;
+  font-family: Bebas Neue, sans-serif;
 }
-.block .info-inner li::before {
-  /* diamond bullet */
+
+.block.mirror .info-inner h2 {
+  margin: 0 0;
+  /* text-shadow: 0 0 50px #ffffff; */
+  color: #cfd8e3;
+  font-weight: 500;
+}
+
+/* gradient + blur layer */
+.block .info-inner h2::before {
   content: "";
   position: absolute;
-  left: 0; top: 0.5em;
-  width: 8px; height: 8px;
-  transform: rotate(45deg);
-  border: 1px solid var(--accent);
-  background: transparent;
-  opacity: 0.9;
+  inset: 0;
+  z-index: -1; /* sits behind the text */
+  opacity: 0;
+  /* backdrop-filter: blur(8px); 
+  -webkit-backdrop-filter: blur(8px);  */
 }
-.block .info-inner li + li {
-  border-top: 1px dashed rgba(255,255,255,0.06);
-  padding-top: 12px;
-  margin-top: 2px;
+
+/* remove native bullets and create room for the custom tick */
+.info-inner ul {
+  list-style: none;
+  padding: 50px 20px 20px 48px; /* ← space for the tick */
+  background-color: #070707;     /* you already have this */
+  font-size: 24px;
+  height: 100%;
+  margin: 0 0 0 10px;
+}
+/* each li hosts a positioned pseudo for the bar */
+.info-inner ul li {
+  position: static;
+  padding: 8px 0;
+  display: flex;
+  align-items: center;
+  gap: 11px;
+  min-height: 17px;
+  color: #cfd8e3;
+}
+/* the red bar (matches your ticker dimensions) */
+.info-inner ul li::before {
+  content: "";
+  position: static;
+  left: auto;              /* same offset you used on the ticker */
+  top: auto;
+  width: 4px;
+  margin-left: -10px; 
+  height: 10px;
+  background: #c72828;
+  opacity: .9;
+  flex: 0 0 4px;
 }
 
 /* Optional entrance (only when you add data-animate to .info) */
@@ -487,15 +505,27 @@ footer {
 
 
 .cta-box {
-  width: 50%;
+  width: 60%;
   margin: 0 auto;
   padding: 24px 28px;
   display: grid;
-  grid-template-columns: 1fr auto;
+  grid-template-columns: auto 1fr;
   align-items: center;
   gap: 16px;
-  background: var(--panel);
-  border: 1px solid var(--border);
+  background: #454343;
+  border: 1px solid #141414;
+  /* box-shadow:
+    0 16px 40px rgba(0,0,0,0.45),
+    inset 0 1px 0 rgba(255,255,255,0.04); */
+  box-shadow: inset 0 0 20px 0 rgba(0, 0, 0, .55);
+}
+.cta-box {
+  background: radial-gradient(
+      circle at center,
+      rgba(60, 60, 60, 0.6) 0%,   /* soft lighter center */
+      rgba(16, 16, 16, 0.85) 60%,  /* dark fade */
+      #070707 100%                 /* solid dark edge */
+  );
   box-shadow:
     0 16px 40px rgba(0,0,0,0.45),
     inset 0 1px 0 rgba(255,255,255,0.04);
@@ -517,13 +547,14 @@ footer {
 .cta-heading {
   margin: 0;
   font-family: "Bebas Neue", sans-serif;
-  font-size: clamp(28px, 4vw, 42px);
+  font-size: clamp(28px, 6vw, 55px);
   letter-spacing: 0.06em;
-  color: var(--text);
+  color: #cfd8e3;
 }
 
 /* --- Button variant with red bar sweep --- */
 .btn-cta {
+  justify-self:flex-end;
   position: relative;
   overflow: hidden;
   isolation: isolate;                 /* keeps the overlay behind text */
@@ -588,8 +619,8 @@ footer {
   margin-top: 14px;
   position: relative;
   overflow: hidden;
-  border: 1px solid var(--border);
-  background: linear-gradient(180deg, var(--panel), var(--panel2));
+  border: 1px solid #141414;
+  background: #070707;
   box-shadow:
     0 6px 24px rgba(0,0,0,.35),
     inset 0 1px 0 rgba(255,255,255,.04);
@@ -634,7 +665,7 @@ footer {
 .cta-ticker .ticker__track::after {
   content: "";
   display: block;    
-  width: 6px; height: 17px;
+  width: 6px; height: 20px;
   margin-left: -17px;     
   background: #c72828;
   opacity: .9;
@@ -652,8 +683,8 @@ footer {
   white-space: nowrap;
   font-family: "Bebas Neue", sans-serif;
   letter-spacing: .06em;
-  color: var(--accent);
-  font-size: clamp(16px, 2.2vw, 20px);
+  color: #cfd8e3;
+  font-size: clamp(20px, 28px, 30px);
   text-shadow: 0 2px 4px rgba(0,0,0,.45);
   position: relative;
 }
@@ -698,10 +729,12 @@ footer {
 }
 
     .block .media {
-      border-left: 1px solid var(--border);
+      /* border-left: 1px solid var(--border); */
       overflow: hidden;
       background: var(--panel2);
       height: 100%;
+      position: relative;
+      z-index: 1;
     }
 
     .block .media img {
@@ -715,6 +748,10 @@ footer {
       order: 2;
       border-right: 1px solid var(--border);
       border-left: none;
+      background:#070707; 
+      box-shadow: inset 0 0 20px 0 rgba(0, 0, 0, .55);
+      background: linear-gradient(180deg,
+        color-mix(in oklab, #575555 51%, #2b2b2b) 0%, #070707 100%);
     }
 
     .block.mirror .media {
@@ -942,6 +979,29 @@ footer {
   --btn-shiny: url("/images/contact/shiny.jpg");
 }
 
+#photos {
+  margin-top: 10px;
+  color: #aab4c3;
+  font-size: 16px;
+  border-bottom: none; 
+  padding: 0;
+}
+.contact-form.slim #photos {
+  padding-bottom: none;
+}
+.field small {
+  color: #aab4c3;
+}
+.contact-form.slim input[type="file"]::file-selector-button {
+  background: #252525;
+  color: #aab4c3;
+  border: 1px solid #313743;
+  padding: 4px;
+}
+.contact-form.slim input[type="file"]::file-selector-button {
+  background: #252525;
+  color: #aab4c3;
+}
 
 /* original size + typography */
 .btn-send{
@@ -1223,7 +1283,7 @@ html { --sbw: calc(100vw - 100%); }  /* = scrollbar width */
   position: relative;
   z-index: 1;
   width: 100%;
-  padding: 40px 0;
+  padding: 0 0 100px;
   backdrop-filter: none;
   text-align: center;
 }
@@ -1298,10 +1358,6 @@ main {
     height: 14vh;
     border: 1px solid #141414;
     border-right: none;
-  } 
-  @keyframes titleInRight{
-    from { transform: translateX(100vw); }
-    to   { transform: translateX(0); }
   }
   .builds-title span {
     display: inline-block;
@@ -1313,7 +1369,6 @@ main {
     width: 100%;
     display: grid;
     place-items: center;
-    animation: titleInRight .8s cubic-bezier(.22,.61,.36,1) .5s both;
   }
   .builds-title-wrap::after {
     content: "";
@@ -1605,12 +1660,12 @@ span.cta{ margin-left: 10px; letter-spacing: .2px; }
     }
 
     .full-bleed {
-      width: 100vw;
+      width: 100%;
       position: relative;
       left: 50%;
       right: 50%;
-      margin-left: -50vw;
-      margin-right: -50vw;
+      margin-left: -50%;
+      margin-right: -50%;
     }
 
     .hero {
@@ -1730,4 +1785,536 @@ span.cta{ margin-left: 10px; letter-spacing: .2px; }
     }
   }
 
+
+/* home.ejs      */
+/* ------------- */
+
+/* Homepage only: hide header logo until scrolled */
+body.is-home .nav-logo {
+  opacity: 0;
+  transition: opacity 0.4s ease;
+  pointer-events: none;
+}
+body.is-home .nav-logo.visible {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+/* ===== Home Video Hero ===== */
+.home-hero {
+  position: relative;
+  height: 100vh;            /* CSS fallback if JS is disabled */
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;   /* stack logo + slogan */
+}
+.hero-top {
+  position: relative;
+  height: 90vh;
+  min-height: 320px;
+  overflow: hidden;
+}
+
+
+/* Home video hero logo — delay its reveal by 1s */
+.home-hero .hero-logo {
+  opacity: 0;
+  transform: translateY(10px);
+  /* prevent the global img reveal from taking over */
+  transition: none !important;
+  
+}
+.home-hero .hero-logo.start {
+  animation: heroLogoIn .8s cubic-bezier(.22,.61,.36,1) 0s forwards;
+}
+
+@keyframes heroLogoIn {
+  to { opacity: .5; transform: translateY(0); }
+}
+
+
+.hero-video {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;         /* fill container */
+  object-position: center;   /* center the subject */
+  z-index: 0;
+  opacity: .6;
+}
+
+.hero-scrim {
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(80% 70% at 50% 50%, rgba(0,0,0,.25), rgba(0,0,0,.55) 65%, rgba(0,0,0,.75));
+  z-index: 1;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+.hero-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 2;
+  display: grid;
+  place-items: center;
+}
+
+.hero-logo {
+  max-width: min(700px, 80vw);
+  width: 100%;
+  height: auto;
+  position: relative;
+  z-index: 1;
+  /* backdrop-filter: blur(8px); */
+}
+
+.btp {
+  height: 10vh;
+  display: grid;
+  place-items: center;
+  position: relative;
+  background: rgba(30, 30, 30, 0.6); /* semi-transparent backdrop */
+  z-index: 1;
+
+}
+.btp::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  background: linear-gradient(
+    to top,
+    rgba(0,0,0,0.8) 0%,
+    rgba(0,0,0,0.4) 50%,
+    transparent 100%
+  );
+}
+
+.btp img {
+  width: 45%;
+}
+
+:root{
+  --band-height: 700px;
+  --band-dark: #030303;
+  --band-gray: #111111;                         /* tweak as needed */
+  --band-mid:  color-mix(in oklab, var(--band-gray) 55%, var(--band-dark) 45%);
+  --band-gray-extent: 66%;                       /* how far gray reaches (~2/3) */
+  --band-softness: 10%;                          /* widen the mid blend (5–18%) */
+}
+
+
+/* full-bleed container */
+.band{
+  position: relative;
+  min-height: var(--band-height);
+  display: grid;
+  place-items: stretch;
+  isolation: isolate;
+  box-shadow:
+    inset 0 1px 0 rgba(255,255,255,.04),
+    inset 0 -1px 0 rgba(0,0,0,.35);
+}
+
+/* LEFT-accent gradient → fades right */
+.band--left{
+  background:
+    linear-gradient(
+      90deg,
+      var(--band-gray) 0%,
+      var(--band-mid) calc(var(--band-gray-extent) - var(--band-softness)),
+      var(--band-mid) var(--band-gray-extent),
+      var(--band-dark) 100%
+    ),
+    /* layer 2 = faint diagonal vignette (top-left → bottom-right) */
+    linear-gradient(
+      205deg,
+      transparent 0% 55%,
+      rgba(0,0,0,.12) 100%
+    );
+  
+}
+
+.band--left .band-media img {
+  -webkit-mask-image: linear-gradient(to right, transparent 0%, black 25%, black 100%);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: cover;
+  mask-image: linear-gradient(to right, transparent 0%, black 25%, black 100%);
+  mask-repeat: no-repeat;
+  mask-size: cover;
+  border-left: none;
+}
+
+.band--right .band-media img {
+  -webkit-mask-image: linear-gradient(to left, transparent 0%, black 25%, black 100%);
+  -webkit-mask-repeat: no-repeat;
+  -webkit-mask-size: cover;
+  mask-image: linear-gradient(to left, transparent 0%, black 25%, black 100%);
+  mask-repeat: no-repeat;
+  mask-size: cover;
+}
+
+/* RIGHT-accent gradient → fades left (mirrored) */
+.band--right{
+  background:
+    linear-gradient(
+      270deg,
+      var(--band-gray) 0%,
+      var(--band-mid) calc(var(--band-gray-extent) - var(--band-softness)),
+      var(--band-mid) var(--band-gray-extent),
+      var(--band-dark) 100%
+    ),
+    linear-gradient(
+      335deg,
+      transparent 0% 55%,
+      rgba(0,0,0,.12) 100%
+    );
+}
+
+/* inner layout: default = info left 2/3, spacer right 1/3 */
+.band-inner{
+  width: 100%;
+  box-sizing: border-box;
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  align-items: center;
+  /* gap: 24px; */
+  height: 100%;
+  padding: 24px clamp(16px, 3vw, 32px);
+}
+
+/* flip layout for band--right: info right 2/3 */
+.band--right .band-inner{
+  grid-template-columns: 1fr 2fr;
+  padding: 0 50px;
+}
+
+.band--left .band-inner {
+  padding: 0 50px;
+}
+/* info block */
+.band-info{
+  padding: clamp(16px, 3vw, 28px);
+  border: 1px solid #141414;
+  box-shadow:
+    0 16px 40px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  min-height: 600px;
+  box-sizing: border-box;
+  text-align: center;
+}
+
+.band--right .band-info {
+  background: linear-gradient(to left, 
+  #040404 0%, 
+  #040404 20%, 
+  #111111 60%,
+  #040404 100% );
+  border-left: none;
+}
+
+.band--left .band-info {
+  background: linear-gradient(to left, 
+  #040404 0%, 
+  #040404 20%, 
+  #111111 60%,
+  #040404 100%
+  );
+  border-right: none;
+}
+
+
+.band-title{
+  font-family: "Bebas Neue", sans-serif;
+  font-size: clamp(28px, 6vw, 56px);
+  letter-spacing: .06em;
+  color: #e7eef7;
+  margin: 0 0 6px;
+  text-transform: uppercase;
+}
+
+.band-text{
+  color: #bfc9d6;
+  margin: 0;
+  max-width: 60ch;
+}
+
+.band-media {
+  position: relative;
+  /* padding: clamp(16px, 3vw, 28px); */
+  border: 1px solid #141414;
+  box-shadow:
+    0 16px 40px rgba(0,0,0,.45),
+    inset 0 1px 0 rgba(255,255,255,.04);
+  background: #070707;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+  height: 600px;
+}
+
+.band--left .band-media {
+  border-left: none;
+}
+.band--right .band-media {
+  border-right: none;
+}
+
+.band-media-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;   /* ⬅️ keeps img from bleeding out */
+}
+
+
+.band-media img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  filter: brightness(.9);
+}
+
+
+.band-media::after{
+  content: "";
+  position: absolute;
+  inset: 0;  
+  pointer-events: none;
+  z-index: 2;
+  box-shadow:
+    inset 0 0 40px rgba(0,0,0,.45),
+    inset 0 -80px 80px rgba(0,0,0,.35),
+    inset 0 80px 60px rgba(0,0,0,.35),
+    inset 80px 0 60px rgba(0,0,0,.35),
+    inset -80px 0 60px rgba(0,0,0,.35);
+}
+
+.band-media-inner::before{
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 1; /* sits above the img, below the vignette */
+  /* fade from band dark → transparent */
+}
+
+/* responsive tweaks */
+@media (max-width: 800px){
+  :root{ --band-height: 240px; }
+  .band-inner{
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .band-info{ padding: 16px; }
+}
+
+/* social media links */
+.social-feed{
+  position: relative;
+  padding: 24px 0 32px;
+  background: #070707;
+  min-height: 500px;
+  /* full-bleed */
+}
+
+.social-inner{
+  width: min(1240px, 92vw);
+  margin: 0 auto;
+}
+
+.social-head{
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 16px;
+  margin-bottom: 12px;
+}
+
+.social-title{
+  font-family: "Bebas Neue", sans-serif;
+  font-size: clamp(28px, 5vw, 40px);
+  letter-spacing: .06em;
+  color: #e7eef7;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.social-link{
+  color: var(--accent, #c72828);
+  text-decoration: none;
+  font-weight: 600;
+}
+
+.social-grid{
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.social-card{
+  position: relative;
+  display: block;
+  aspect-ratio: 1 / 1;
+  overflow: hidden;
+  border: 1px solid #141414;
+  box-shadow:
+    0 16px 40px rgba(0,0,0,.35),
+    inset 0 1px 0 rgba(255,255,255,.03);
+  background: #0b0d10;
+}
+
+.social-card img{
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: saturate(.98) contrast(1.02);
+  transition: transform .35s ease;
+}
+
+.social-card:hover img{
+  transform: scale(1.04);
+}
+
+.social-empty{
+  color: #aab4c3;
+  grid-column: 1 / -1;
+  padding: 24px 0;
+  text-align: center;
+}
+
+/* responsive */
+@media (max-width: 900px){
+  .social-grid{ grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px){
+  .social-grid{ grid-template-columns: 1fr; }
+}
+
+/* end of social media links */
+
+
+
+
+
+
+
+
+/* end of home.ejs */
+
+
+/* ===== Current Build (show-current.ejs) ===== */
+
+.wip-section {
+  width: 100%;            /* span full page width */
+  height: auto;       /* at least fill its content */
+  background: #070707;  
+  padding: 40px 0;        /* space above/below inner content */
+  box-sizing: border-box; /* keep padding included */
+  position: relative;
+  z-index: 1;
+}
+.wip-intro {
+  max-width: var(--text-max);
+  margin: 32px auto 58px;
+  padding: 18px 22px;
+  background: #0b0d10;
+  border: 1px solid var(--border);
+  box-shadow: inset 0 0 20px rgba(0,0,0,.55);
+}
+
+.wip-heading {
+  margin: 0 0 8px;
+  font-family: "Bebas Neue", sans-serif;
+  letter-spacing: .06em;
+  font-size: clamp(28px, 4.4vw, 40px);
+  color: #cfd8e3;
+}
+.wip-subheading {
+  margin: 14px 0 6px;
+  font-size: 16px;
+  text-transform: uppercase;
+  letter-spacing: .08em;
+  color: #aab4c3;
+}
+.wip-paragraph {
+  color: #cfd8e3;
+  line-height: 1.55;
+  margin: 0 0 8px;
+}
+
+/* 4-wide responsive gallery that fills the page naturally */
+.gallery-grid {
+  display: grid;
+  gap: 8px;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  padding: 16px 24px 32px;
+  background: #070707;
+  border-top: 1px solid var(--border);
+  position: relative;
+  z-index: 1;
+}
+.gallery-grid::before {
+  content: "";
+  position: absolute;
+  inset: 0;                        /* full cover */
+  background: #070707;
+  z-index: -1;                     /* sit behind gallery items */
+}
+.gallery-item { 
+  aspect-ratio: 4 / 3; 
+  overflow: hidden; 
+  width: 100%;
+  height: 100%;
+  margin: auto;
+}
+.gallery-grid img {
+  opacity: 0;
+  transition: opacity .3s ease;
+}
+.gallery-grid img.is-loaded {
+  opacity: 1;
+}
+
+.gallery-item img { 
+  width: 100%; 
+  height: 100%; 
+  object-fit: cover; 
+  object-position: center; 
+}
+
+/* responsive steps */
+@media (max-width: 1200px) {
+  .gallery-grid { grid-template-columns: repeat(3, 1fr); }
+}
+@media (max-width: 800px) {
+  .gallery-grid { grid-template-columns: repeat(2, 1fr); }
+}
+@media (max-width: 520px) {
+  .gallery-grid { grid-template-columns: 1fr; }
+}
+
+.wip-section .cta-box {
+  color: #070707;
+  background: #2f343a;
+  box-shadow: inset 0 0 20px 0 rgba(0, 0, 0, .55);
+}
+.wip-section .cta-ticker {
+  background: #070707;
+  box-shadow: inset 0 0 20px 0 rgba(0, 0, 0, .55);
+}
+.wip-section .tick {
+  color: #cfd8e3;
+}
+
+/* end of show-current.ejs */
 

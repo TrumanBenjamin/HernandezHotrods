@@ -14,13 +14,17 @@
 
   <!-- Any other shared assets like fonts, favicons, etc -->
 </head>
-<body>
+<body class="<%= (typeof isHome !== 'undefined' && isHome) ? 'is-home' : '' %>">
 
   <%- include('partials/header') %>
 
   <%- body %> 
 
   <%- include('partials/footer') %>
+
   <script src="/js/main.js"></script>
+  <% if ((typeof isHome !== 'undefined' && isHome)) { %>
+    <script src="/js/home.js"></script>
+  <% } %>
 </body>
 </html>

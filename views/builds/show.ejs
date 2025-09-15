@@ -1,14 +1,6 @@
 <main>
 
-  <section class="hero">
-    <img class="hero-img" src="<%= build.hero_image %>" alt="<%= build.name %>">
-    <div class="hero-shadow"></div>
-  </section>
-    <div class="hero-spacer"></div>
-    <div class="build-title-sticky">
-      <% const firstName = build.owner_name?.split(' ')[0]; %>
-      <%= firstName %><%= firstName?.endsWith('s') ? "'" : "'s" %> <%= build.name %>
-    </div>
+  <%- include('../partials/build_hero') %>
 
 
   <div class="container">
@@ -20,16 +12,16 @@
         <% } %> 
 
         <section class="block full-bleed <%= i % 2 === 1 ? 'mirror' : '' %>">
-          <div class="info" <%= i === 0 ? '' : 'data-animate' %>>
-            <div class="info-inner">
-              <h2><span class="title-reveal"><%= blk.title %></span></h2>
-              <ul>
-                <% (blk.items || []).forEach(it => { %>
-                  <li><%= it.text %></li>
-                <% }) %>
-              </ul>
+            <div class="info" <%= i === 0 ? '' : 'data-animate' %>>
+              <div class="info-inner">
+                <h2><span class="title-reveal"><%= blk.title %></span></h2>
+                <ul>
+                  <% (blk.items || []).forEach(it => { %>
+                    <li><%= it.text %></li>
+                  <% }) %>
+                </ul>
+              </div>
             </div>
-          </div>
 
           <div class="media <%= i === 0 ? '' : 'delay' %>" <%= i === 0 ? '' : 'data-animate' %>>
             <% if (blk.imageUrl) { %>
@@ -42,53 +34,31 @@
     <% } %>
   </div>
 
-  <% if (extraPhotos && extraPhotos.length) { %>
-    <section class="gallery reveal">
-      <h2 style="font-size:16px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent);margin:24px 0 8px">More photos</h2>
-      <div class="gallery" data-animate="">
-        <% extraPhotos.forEach(p => { %>
-          <img src="<%= p.url %>" alt="<%= p.alt || (build.name + ' photo') %>">
-        <% }) %>
-      </div>
+
+  <%- include('../partials/startbuild') %>
+
+      <section class="gallery-grid" data-animate>
+      <% extraPhotos.forEach((p, i) => { %>
+        <figure class="gallery-item">
+          <% if (i < 4) { %>
+            <img
+              src="<%= p.url %>"
+              alt="<%= p.alt || (build.name + ' photo') %>"
+              loading="eager"
+              decoding="async">
+          <% } else { %>
+            <img
+              class="lazy"
+              data-src="<%= p.url %>"
+              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+              alt="<%= p.alt || (build.name + ' photo') %>"
+              loading="lazy"
+              decoding="async"
+              fetchpriority="low">
+          <% } %>
+        </figure>
+      <% }) %>
     </section>
-  <% } %>
 
-  <section class="cta reveal">
-    <div class="cta-box" data-animate>
-      <p class="cta-heading">Are you ready to start your build?</p>
-      <a class="btn btn-cta" href="/contact"><span>Contact us</span></a>
-      <!-- NEW: conveyor ticker under the CTA row -->
-      <div class="cta-ticker" aria-label="Services">
-        <div class="ticker">
-          <!-- Track A -->
-          <div class="ticker__track">
-            <span class="tick">Body &amp; Paint</span>
-            <span class="tick">Metal Fabrication</span>
-            <span class="tick">Custom Interiors</span>
-            <span class="tick">EFI &amp; Tuning</span>
-            <span class="tick">Suspension</span>
-            <span class="tick">Wiring</span>
-            <span class="tick">Wheels &amp; Tires</span>
-            <span class="tick">Audio</span>
-          </div>
-          <!-- Track B (duplicate for seamless loop) -->
-          <div class="ticker__track" aria-hidden="true">
-            <span class="tick">Body &amp; Paint</span>
-            <span class="tick">Metal Fabrication</span>
-            <span class="tick">Custom Interiors</span>
-            <span class="tick">EFI &amp; Tuning</span>
-            <span class="tick">Suspension</span>
-            <span class="tick">Wiring</span>
-            <span class="tick">Wheels &amp; Tires</span>
-            <span class="tick">Audio</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  </section>
-
-  <section>
-    Extra photos gallery!!!
-  </section>
 
 </main>

@@ -1,0 +1,9 @@
+<section class="hero">
+  <img class="hero-img" src="<%= build.hero_image %>" alt="<%= build.name %>">
+  <div class="hero-shadow"></div>
+</section>
+<div class="hero-spacer"></div>
+<div class="build-title-sticky">
+  <% const firstName = build.owner_name?.split(' ')[0]; %>
+  <%= firstName %><%= firstName?.endsWith('s') ? "'" : "'s" %> <%= build.name %>
+</div>
