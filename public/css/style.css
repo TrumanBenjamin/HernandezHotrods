@@ -71,6 +71,7 @@ footer {
   font-size: 0.7rem;
   margin-top: auto;
   z-index: 1;
+  /* border-top: 1px solid #141414; */
 } 
 .footer-socials {
   margin-bottom: 0.5rem;
@@ -113,7 +114,7 @@ footer {
   background: linear-gradient(to left, rgb(10 10 10) 0%, rgb(0 0 0 / 70%) 50%, rgb(10 10 10) 100%);
   box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease-in-out;
-  border-bottom: 1px solid #141414;
+  /* border-bottom: 1px solid #141414; */
 }
 
 .hide-header {
@@ -811,8 +812,8 @@ footer {
   grid-template-columns: 1fr 1fr;            /* ~40% / 60% */
   min-height: clamp(680px, 88vh, 1100px);
   background: #0b0d10;
-  border-top: 1px solid #232831;
-  border-bottom: 1px solid #232831;
+  /* border-top: 1px solid #232831;
+  border-bottom: 1px solid #232831; */
   box-shadow: 0 4px 20px rgba(0,0,0,.35) inset;
   isolation: isolate;
 }
@@ -1878,8 +1879,9 @@ body.is-home .nav-logo.visible {
   display: grid;
   place-items: center;
   position: relative;
-  background: rgba(30, 30, 30, 0.6); /* semi-transparent backdrop */
+  background: #0e0e0e99;
   z-index: 1;
+  border-top: 1px solid #141414;
 
 }
 .btp::before {
@@ -1897,6 +1899,7 @@ body.is-home .nav-logo.visible {
 
 .btp img {
   width: 45%;
+  opacity: .8 !important;
 }
 
 :root{
@@ -1916,14 +1919,14 @@ body.is-home .nav-logo.visible {
   display: grid;
   place-items: stretch;
   isolation: isolate;
-  box-shadow:
+  /* box-shadow:
     inset 0 1px 0 rgba(255,255,255,.04),
-    inset 0 -1px 0 rgba(0,0,0,.35);
+    inset 0 -1px 0 rgba(0,0,0,.35); */
 }
 
 /* LEFT-accent gradient → fades right */
 .band--left{
-  background:
+  /* background:
     linear-gradient(
       90deg,
       var(--band-gray) 0%,
@@ -1931,12 +1934,12 @@ body.is-home .nav-logo.visible {
       var(--band-mid) var(--band-gray-extent),
       var(--band-dark) 100%
     ),
-    /* layer 2 = faint diagonal vignette (top-left → bottom-right) */
     linear-gradient(
       205deg,
       transparent 0% 55%,
       rgba(0,0,0,.12) 100%
-    );
+    ); */
+  background: #000000cc;
   
 }
 
@@ -1961,7 +1964,7 @@ body.is-home .nav-logo.visible {
 
 /* RIGHT-accent gradient → fades left (mirrored) */
 .band--right{
-  background:
+  /* background:
     linear-gradient(
       270deg,
       var(--band-gray) 0%,
@@ -1973,7 +1976,8 @@ body.is-home .nav-logo.visible {
       335deg,
       transparent 0% 55%,
       rgba(0,0,0,.12) 100%
-    );
+    ); */
+  background:#000000cc ;
 }
 
 /* inner layout: default = info left 2/3, spacer right 1/3 */
@@ -1986,45 +1990,47 @@ body.is-home .nav-logo.visible {
   align-items: center;
   /* gap: 24px; */
   height: 100%;
-  padding: 24px clamp(16px, 3vw, 32px);
+  padding: 24px clamp(16px, 3vw, 70px);
 }
 
 /* flip layout for band--right: info right 2/3 */
 .band--right .band-inner{
   grid-template-columns: 1fr 2fr;
-  padding: 0 50px;
+  /* padding: 0 50px; */
 }
 
 .band--left .band-inner {
-  padding: 0 50px;
+  /* padding: 0 50px; */
 }
 /* info block */
 .band-info{
   padding: clamp(16px, 3vw, 28px);
-  border: 1px solid #141414;
-  box-shadow:
+  /* border: 1px solid #141414; */
+  /* box-shadow:
     0 16px 40px rgba(0,0,0,.45),
-    inset 0 1px 0 rgba(255,255,255,.04);
-  min-height: 600px;
+    inset 0 1px 0 rgba(255,255,255,.04); */
   box-sizing: border-box;
   text-align: center;
+  height: 100%;
+  width: 100%;
+  border-top: none;
 }
 
 .band--right .band-info {
-  background: linear-gradient(to left, 
+  background: linear-gradient(to right, 
   #040404 0%, 
-  #040404 20%, 
-  #111111 60%,
-  #040404 100% );
+  #04040400 20%, 
+  #0b0d10db 60%,
+  #04040400 100% );
   border-left: none;
 }
 
 .band--left .band-info {
   background: linear-gradient(to left, 
   #040404 0%, 
-  #040404 20%, 
-  #111111 60%,
-  #040404 100%
+  #04040400 20%, 
+  #0b0d10db 60%,
+  #04040400 100%
   );
   border-right: none;
 }
@@ -2048,7 +2054,7 @@ body.is-home .nav-logo.visible {
 .band-media {
   position: relative;
   /* padding: clamp(16px, 3vw, 28px); */
-  border: 1px solid #141414;
+  /* border: 1px solid #141414; */
   box-shadow:
     0 16px 40px rgba(0,0,0,.45),
     inset 0 1px 0 rgba(255,255,255,.04);
@@ -2057,7 +2063,8 @@ body.is-home .nav-logo.visible {
   align-items: center;
   justify-content: center;
   box-sizing: border-box;
-  height: 600px;
+  height: 100%;
+  width: 100%;
 }
 
 .band--left .band-media {
@@ -2218,18 +2225,26 @@ body.is-home .nav-logo.visible {
   width: 100%;            /* span full page width */
   height: auto;       /* at least fill its content */
   background: #070707;  
-  padding: 40px 0;        /* space above/below inner content */
+  padding: 20px 0;        /* space above/below inner content */
   box-sizing: border-box; /* keep padding included */
   position: relative;
   z-index: 1;
 }
 .wip-intro {
-  max-width: var(--text-max);
-  margin: 32px auto 58px;
-  padding: 18px 22px;
+  margin: 32px auto 48px;
   background: #0b0d10;
   border: 1px solid var(--border);
   box-shadow: inset 0 0 20px rgba(0,0,0,.55);
+  width: 60%;
+}
+
+
+@media (max-width: 900px) {
+  .wip-intro {
+    width: 90%;
+    margin: 0px auto 20px;
+    padding: 16px;
+  }
 }
 
 .wip-heading {
@@ -2239,17 +2254,39 @@ body.is-home .nav-logo.visible {
   font-size: clamp(28px, 4.4vw, 40px);
   color: #cfd8e3;
 }
-.wip-subheading {
-  margin: 14px 0 6px;
-  font-size: 16px;
-  text-transform: uppercase;
-  letter-spacing: .08em;
-  color: #aab4c3;
+/* WIP section heading with opposite-lean bars */
+.wip-heading {
+  position: relative;
+  display: inline-block;     /* size to the text */
+  padding: 6px 30px;        /*  adjust to taste */
+  z-index: 1;
+  background: #070707;
 }
+
+
+/* Light gray cap that follows the same angle on the right */
+.wip-heading::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  right: -30px;
+  width: 30px;
+  background: #b6b6b6;
+  /* transform: skewX(-14deg); */
+  transform-origin: left center;
+  z-index: -2;
+  border: 1px solid #141414;
+  box-shadow: inset 0 0 20px rgba(0,0,0,.55);
+}
+
+
+
 .wip-paragraph {
   color: #cfd8e3;
   line-height: 1.55;
   margin: 0 0 8px;
+  font-size: 20px;
+  padding: 18px 22px;
 }
 
 /* 4-wide responsive gallery that fills the page naturally */

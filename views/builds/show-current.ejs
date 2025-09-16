@@ -7,10 +7,9 @@
   <div class="wip-section">
     <section class="wip-intro container" data-animate>
       <h2 class="wip-heading">About this build</h2>
-      <p class="wip-paragraph">
-        <%= build.about || build.subtitle || `We’re bringing ${build.name} up to modern reliability and performance while keeping its original character.` %>
+      <p class="wip-paragraph"> 
+        <%= build.subtitle || `We’re bringing ${build.name} up to modern reliability and performance while keeping its original character.` %>
       </p>
-      include
 
       <% if (build.plans) { %>
         <h3 class="wip-subheading">Plan</h3>
