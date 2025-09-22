@@ -1,0 +1,377 @@
+<main class="admin-page">
+  <header class="admin-header">
+    <h1>Admin</h1>
+    <h2 class="admin-greeting">Hello, Truman!</h2>
+    <form action="/auth/logout" method="post">
+        <button class="admin btn-send"><span>Log out</span></button>
+    </form>
+  </header>
+
+  <!-- Optional success/error flash area -->
+  <% if (typeof flash !== 'undefined') { %>
+    <div class="admin-flash">
+      <% if (flash.success) { %><p class="ok"><%= flash.success %></p><% } %>
+      <% if (flash.error) { %><p class="bad"><%= flash.error %></p><% } %>
+    </div>
+  <% } %>
+
+    <section class="admin-section" id="sec-builds">
+    <div class="admin-section__head">
+        <h2>Builds</h2>
+
+        <!-- Row 1: Current / Completed -->
+        <div class="admin-section__tabs tabs-row tabs-build-kind">
+        <button class="tab kind-tab is-active" data-kind="current">Current</button>
+        <button class="tab kind-tab" data-kind="completed">Completed</button>
+        </div>
+
+        <!-- Row 2: Add / Update / Delete (changes per kind) -->
+        <div class="admin-section__tabs tabs-row tabs-build-action">
+        <button class="tab action-tab is-active" data-tab="add">Add</button>
+        <button class="tab action-tab" data-tab="update">Update</button>
+        <button class="tab action-tab" data-tab="delete">Delete</button>
+        </div>
+    </div>
+
+    <div class="admin-section__body">
+        <!-- ============== CURRENT ============== -->
+        <div class="build-kind-panel is-active" data-kind-panel="current">
+        <!-- ADD CURRENT -->
+        <form class="panel is-active" id="current-add" action="/admin/builds/add" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="is_completed" value="false">
+            <div class="grid">
+            <label>Owner Name
+                <input name="owner_name" placeholder="First Last" required>
+            </label>
+            <label>Name (Year Make Model)
+                <input name="name" placeholder="1969 Camaro RS" required>
+            </label>
+            </div>
+            <label>Description
+            <textarea name="subtitle" rows="5" placeholder="A semi-lengthy description…" required></textarea>
+            </label>
+            <label>Photos (50–100+)
+            <input type="file" name="photos" accept="image/*" multiple>
+            </label>
+            <button type="submit" class="btn-red">Create Current Build</button>
+        </form>
+
+        <!-- UPDATE CURRENT -->
+        <form class="panel" id="current-update" action="/admin/builds/update" method="post" enctype="multipart/form-data">
+            <label>Select Current Build
+            <select name="build_id" required>
+                <% (builds || []).filter(b => !b.is_completed).forEach(b => { %>
+                <option value="<%= b.id %>"><%= b.name %></option>
+                <% }) %>
+            </select>
+            </label>
+            <div class="grid">
+            <label>Owner Name
+                <input name="owner_name" placeholder="(no change)">
+            </label>
+            <label>Name (Year Make Model)
+                <input name="name" placeholder="(no change)">
+            </label>
+            </div>
+            <label>Description
+            <textarea name="subtitle" rows="5" placeholder="(no change)"></textarea>
+            </label>
+            <label>Add More Photos (optional)
+            <input type="file" name="photos" accept="image/*" multiple>
+            </label>
+            <button type="submit" class="btn-red">Save Changes</button>
+        </form>
+
+        <!-- DELETE CURRENT -->
+        <form class="panel" id="current-delete" action="/admin/builds/delete" method="post" onsubmit="return confirmDelete(this)">
+            <label>Select Current Build to Delete
+            <select name="build_id" required>
+                <% (builds || []).filter(b => !b.is_completed).forEach(b => { %>
+                <option value="<%= b.id %>"><%= b.name %></option>
+                <% }) %>
+            </select>
+            </label>
+            <button type="submit" class="btn-outline">Delete Build</button>
+        </form>
+        </div>
+
+        <!-- ============== COMPLETED ============== -->
+        <div class="build-kind-panel" data-kind-panel="completed">
+        <!-- Placeholder forms; we’ll customize fields after you tell me requirements -->
+
+        <!-- ADD COMPLETED -->
+        <form class="panel is-active" id="completed-add" action="/admin/builds/add-completed" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="is_completed" value="true">
+            <!-- TODO: fields for completed builds; temporary minimal set -->
+            <div class="grid">
+            <label>Owner Name
+                <input name="owner_name" required>
+            </label>
+            <label>Name (Year Make Model)
+                <input name="name" required>
+            </label>
+            </div>
+            <label>Description
+            <textarea name="subtitle" rows="5"></textarea>
+            </label>
+            <label>Photos
+            <input type="file" name="photos" accept="image/*" multiple>
+            </label>
+            <button type="submit" class="btn-red">Create Completed Build</button>
+        </form>
+
+        <!-- UPDATE COMPLETED -->
+        <form class="panel" id="completed-update" action="/admin/builds/update-completed" method="post" enctype="multipart/form-data">
+            <label>Select Completed Build
+            <select name="build_id" required>
+                <% (builds || []).filter(b => b.is_completed).forEach(b => { %>
+                <option value="<%= b.id %>"><%= b.name %></option>
+                <% }) %>
+            </select>
+            </label>
+            <!-- TODO: completed-specific fields -->
+            <div class="grid">
+            <label>Owner Name
+                <input name="owner_name" placeholder="(no change)">
+            </label>
+            <label>Name
+                <input name="name" placeholder="(no change)">
+            </label>
+            </div>
+            <label>Description
+            <textarea name="subtitle" rows="5" placeholder="(no change)"></textarea>
+            </label>
+            <label>Add More Photos (optional)
+            <input type="file" name="photos" accept="image/*" multiple>
+            </label>
+            <button type="submit" class="btn-red">Save Changes</button>
+        </form>
+
+        <!-- DELETE COMPLETED -->
+        <form class="panel" id="completed-delete" action="/admin/builds/delete-completed" method="post" onsubmit="return confirmDelete(this)">
+            <label>Select Completed Build to Delete
+            <select name="build_id" required>
+                <% (builds || []).filter(b => b.is_completed).forEach(b => { %>
+                <option value="<%= b.id %>"><%= b.name %></option>
+                <% }) %>
+            </select>
+            </label>
+            <button type="submit" class="btn-outline">Delete Build</button>
+        </form>
+        </div>
+    </div>
+    </section>
+
+  <section class="admin-section" id="sec-forsale">
+    <div class="admin-section__head">
+      <h2>For Sale</h2>
+      <div class="admin-section__tabs">
+        <button class="tab is-active" data-tab="add-sale">Add</button>
+        <button class="tab" data-tab="update-sale">Update</button>
+        <button class="tab" data-tab="delete-sale">Delete</button>
+      </div>
+    </div>
+
+    <div class="admin-section__body">
+      <!-- ADD SALE -->
+      <form class="panel is-active" id="add-sale" action="/admin/sale/add" method="post">
+        <div class="admin-grid">
+          <label>Title <input name="title" required></label>
+          <label>Price (USD) <input name="price" type="number" step="0.01" required></label>
+          <label>Status
+            <select name="status" required>
+              <option value="available">Available</option>
+              <option value="pending">Pending</option>
+              <option value="sold">Sold</option>
+            </select>
+          </label>
+          <label>Thumbnail URL <input name="thumb_url" type="url"></label>
+        </div>
+        <label>Description
+          <textarea name="description" rows="4"></textarea>
+        </label>
+        <button type="submit" class="btn-red">Create Listing</button>
+      </form>
+
+      <!-- UPDATE SALE -->
+      <form class="panel" id="update-sale" action="/admin/sale/update" method="post">
+        <label>Select Item
+          <select name="item_id" required>
+            <% (forSale || []).forEach(i => { %>
+              <option value="<%= i.id %>"><%= i.title %> — $<%= i.price %></option>
+            <% }) %>
+          </select> 
+        </label>
+        <div class="admin-grid">
+          <label>Title <input name="title" placeholder="(no change)"></label>
+          <label>Price <input name="price" type="number" step="0.01" placeholder="(no change)"></label>
+          <label>Status
+            <select name="status">
+              <option value="">(no change)</option>
+              <option value="available">Available</option>
+              <option value="pending">Pending</option>
+              <option value="sold">Sold</option>
+            </select>
+          </label>
+          <label>Thumbnail URL <input name="thumb_url" type="url" placeholder="(no change)"></label>
+        </div>
+        <label>Description
+          <textarea name="description" rows="4" placeholder="(no change)"></textarea>
+        </label>
+        <button type="submit" class="btn-red">Save Changes</button>
+      </form>
+
+      <!-- DELETE SALE -->
+      <form class="panel" id="delete-sale" action="/admin/sale/delete" method="post" onsubmit="return confirmDelete(this)">
+        <label>Select Item to Delete
+          <select name="item_id" required>
+            <% (forSale || []).forEach(i => { %>
+              <option value="<%= i.id %>"><%= i.title %></option>
+            <% }) %>
+          </select>
+        </label>
+        <button type="submit" class="btn-outline">Delete Listing</button>
+      </form>
+    </div>
+  </section>
+
+  <section class="admin-section" id="sec-team">
+    <div class="admin-section__head">
+      <h2>Team</h2>
+      <div class="admin-section__tabs">
+        <button class="tab is-active" data-tab="add-team">Add</button>
+        <button class="tab" data-tab="update-team">Update</button>
+        <button class="tab" data-tab="delete-team">Delete</button>
+      </div>
+    </div>
+
+    <div class="admin-section__body">
+      <!-- ADD TEAM -->
+      <form class="panel is-active" id="add-team" action="/admin/team/add" method="post">
+        <div class="admin-grid">
+          <label>Name <input name="name" required></label>
+          <label>Role/Title <input name="role" required></label>
+          <label>Photo URL <input name="photo_url" type="url"></label>
+        </div>
+        <label>Bio
+          <textarea name="bio" rows="4"></textarea>
+        </label>
+        <button type="submit" class="btn-red">Add Member</button>
+      </form>
+
+      <!-- UPDATE TEAM -->
+      <form class="panel" id="update-team" action="/admin/team/update" method="post">
+        <label>Select Member
+          <select name="member_id" required>
+            <% (team || []).forEach(m => { %>
+              <option value="<%= m.id %>"><%= m.name %> — <%= m.role %></option>
+            <% }) %>
+          </select>
+        </label>
+        <div class="admin-grid">
+          <label>Name <input name="name" placeholder="(no change)"></label>
+          <label>Role/Title <input name="role" placeholder="(no change)"></label>
+          <label>Photo URL <input name="photo_url" type="url" placeholder="(no change)"></label>
+        </div>
+        <label>Bio
+          <textarea name="bio" rows="4" placeholder="(no change)"></textarea>
+        </label>
+        <button type="submit" class="btn-red">Save Changes</button>
+      </form>
+
+      <!-- DELETE TEAM -->
+      <form class="panel" id="delete-team" action="/admin/team/delete" method="post" onsubmit="return confirmDelete(this)">
+        <label>Select Member to Delete
+          <select name="member_id" required>
+            <% (team || []).forEach(m => { %>
+              <option value="<%= m.id %>"><%= m.name %></option>
+            <% }) %>
+          </select>
+        </label>
+        <button type="submit" class="btn-outline">Delete Member</button>
+      </form>
+    </div>
+  </section>
+
+    <script>
+    document.querySelectorAll('.admin-section').forEach(section => {
+        const tabs = section.querySelectorAll('.tab');
+        const panels = section.querySelectorAll('.panel');
+
+        tabs.forEach(tab => {
+        tab.addEventListener('click', () => {
+            // remove active state from all tabs/panels
+            tabs.forEach(t => t.classList.remove('is-active'));
+            panels.forEach(p => p.classList.remove('is-active'));
+
+            // activate clicked tab + its matching panel
+            tab.classList.add('is-active');
+            const targetId = tab.dataset.tab;
+            const targetPanel = section.querySelector('#' + targetId);
+            if (targetPanel) targetPanel.classList.add('is-active');
+        });
+        });
+    });
+    </script>
+    <script>
+    // Keep your old simple script for other sections, but SKIP #sec-builds there.
+    // Then run this builds-only controller:
+
+    (function () {
+        const sec = document.querySelector('#sec-builds');
+        if (!sec) return;
+
+        const kindTabs   = sec.querySelectorAll('.kind-tab');     // Current / Completed
+        const actionTabs = sec.querySelectorAll('.action-tab');   // Add / Update / Delete
+        const kindPanels = sec.querySelectorAll('.build-kind-panel');
+
+        function show(kind, action) {
+        // 1) Highlight only the chosen kind tab
+        kindTabs.forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.kind === kind);
+        });
+
+        // 2) Show only the chosen kind panel
+        kindPanels.forEach(panel => {
+            panel.classList.toggle('is-active', panel.dataset.kindPanel === kind);
+        });
+
+        // 3) Highlight only the chosen action tab (do NOT touch kind tabs)
+        actionTabs.forEach(btn => {
+            btn.classList.toggle('is-active', btn.dataset.tab === action);
+        });
+
+        // 4) Show only the panel matching {kind}-{action}
+         sec.querySelectorAll('.build-kind-panel .panel')
+        .forEach(p => p.classList.remove('is-active'));
+
+        //    - Find the target by id across the whole builds section
+        const targetId = `${kind}-${action}`;   // e.g., "completed-update"
+        const target = sec.querySelector(`#${targetId}`);
+        if (target) {
+            target.classList.add('is-active');
+        } else {
+            console.warn('Panel not found:', targetId);
+        }
+    }
+
+        // Click handlers
+        kindTabs.forEach(btn => {
+        btn.addEventListener('click', () => show(btn.dataset.kind, 'add')); // default to Add on kind switch
+        });
+
+        actionTabs.forEach(btn => {
+        btn.addEventListener('click', () => {
+            const activeKind = sec.querySelector('.kind-tab.is-active')?.dataset.kind || 'current';
+            show(activeKind, btn.dataset.tab);
+        });
+        });
+
+        // Init
+        show('current', 'add');
+    })();
+    </script>
+
+
+
+</main>

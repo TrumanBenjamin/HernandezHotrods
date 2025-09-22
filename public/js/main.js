@@ -1,46 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   
   // ===== Lazy gallery loader (4 concurrent) =====
-  (function () {
-    const MAX_CONCURRENCY = 4;
-    let inFlight = 0;
-    const queue = [];
 
-    const loadImg = (img) => {
-      if (!img.dataset.src) return;
-      inFlight++;
-      const done = () => {
-        inFlight = Math.max(0, inFlight - 1);
-        img.classList.add('is-loaded');
-        processQueue();
-      };
-      img.onload = done;
-      img.onerror = done;
-      img.src = img.dataset.src;
-      img.removeAttribute('data-src');
-    };
-
-    const processQueue = () => {
-      while (inFlight < MAX_CONCURRENCY && queue.length) {
-        loadImg(queue.shift());
-      }
-    };
-
-    const lazyImgs = Array.from(document.querySelectorAll('.gallery-grid img.lazy'));
-    if (!lazyImgs.length) return;
-
-    const io = new IntersectionObserver((entries) => {
-      entries.forEach((entry) => {
-        if (!entry.isIntersecting) return;
-        const img = entry.target;
-        io.unobserve(img);
-        queue.push(img);
-        processQueue();
-      });
-    }, { rootMargin: '300px 0px', threshold: 0.01 });
-
-    lazyImgs.forEach((img) => io.observe(img));
-  })();
   // end of lazy loader
 
 
@@ -50,7 +11,8 @@ document.addEventListener('DOMContentLoaded', function () {
   const docEl = document.documentElement;
 
   // Collect <img> tags
-  let imgs = Array.from(document.images);
+  let imgs = Array.from(document.images); 
+  imgs = imgs.filter(img => !img.closest('.gallery-grid'));
   // If we are on the home page, skip the hero + nav logos
   if (document.body.classList.contains('is-home')) {
     imgs = imgs.filter(img =>
@@ -89,7 +51,7 @@ document.addEventListener('DOMContentLoaded', function () {
   const timeout = new Promise(res => setTimeout(res, TIMEOUT_MS));
 
   // When done (or timeout), mark bg elements as loaded and reveal the page
-  Promise.race([Promise.allSettled([...imgPromises, ...bgPromises]), timeout]).then(() => {
+  Promise.race([Promise.allSettled([imgPromises, bgPromises]), timeout]).then(() => {
     bgEls.forEach(el => el.classList.add('is-loaded'));
     docEl.classList.remove('is-loading');
     docEl.classList.add('is-ready');

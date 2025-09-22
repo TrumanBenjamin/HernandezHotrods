@@ -1,0 +1,76 @@
+
+<main class="page forSale">
+    
+    <div class="builds-title-wrap">
+      <h1 class="builds-title"><span>Vehicles For Sale</span></h1>
+    </div>  
+
+
+
+  <% if (!items || !items.length) { %>
+    <section class="container" style="padding: 40px 0;">
+      <h2 class="wip-heading">For Sale</h2>
+      <p class="wip-paragraph">Nothing listed right now — check back soon.</p>
+    </section>
+  <% } %>
+
+  <% items.forEach(function(item){ %>
+    <article class="wip-section" id="<%= item.slug %>">
+        
+
+      <section class="wip-intro container" data-animate>
+        <h2 class="wip-heading">
+          <%= item.title %>
+          <% if (item.is_sold) { %>
+            <span class="badge-sold">SOLD</span>
+          <% } %>
+        </h2>
+        <p class="wip-paragraph"><%= item.description %></p>
+
+        <!-- If you later want a “Posted on …” line, uncomment:
+        <p class="wip-meta">Listed <%= new Date(item.posted_at).toLocaleDateString() %></p>
+        -->
+      </section>
+
+      <!-- Gallery (same pattern as your show-current extra photos) -->
+        <% if (item.photos && item.photos.length) { %>
+        <section class="gallery-grid">
+            <% item.photos.forEach(function (p, i) { %>
+            <% if (i % 4 === 0) { %>
+                <section class="gallery-row"><!-- start row -->
+            <% } %>
+
+            <figure class="gallery-item" <%= i === 0 ? '' : 'data-animate' %>>
+                <!-- we can keep 'eager' on the first row for faster fetches,
+                    but reveal timing will still be controlled by JS -->
+                <% if (i < 4) { %>
+                <img
+                    src="<%= p.url %>"
+                    alt="<%= p.alt || (item.title + ' photo') %>"
+                    loading="eager"
+                    decoding="async">
+                <% } else { %>
+                <img
+                    class="lazy"
+                    data-src="<%= p.url %>"
+                    src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+                    alt="<%= p.alt || (item.title + ' photo') %>"
+                    loading="lazy"
+                    decoding="async"
+                    fetchpriority="low">
+                <% } %>
+            </figure>
+
+            <% if (i % 4 === 3 || i === item.photos.length - 1) { %>
+                </section><!-- end row -->
+            <% } %>
+            <% }) %>
+        </section>
+        <% } %>
+      <div class="for-sale-divider" aria-hidden="true"></div>    
+    </article>
+  <% }) %>
+    <div class="forSaleContact">
+        <h2>If you would like to inquire about any of our vehicles for sale, please <a href="/contact" class="btn-send"><span>Contact Us</span></a> </h2>
+    </div>
+</main>
