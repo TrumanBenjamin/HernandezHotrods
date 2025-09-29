@@ -21,15 +21,22 @@
 
         <!-- Row 1: Current / Completed -->
         <div class="admin-section__tabs tabs-row tabs-build-kind">
-        <button class="tab kind-tab is-active" data-kind="current">Current</button>
-        <button class="tab kind-tab" data-kind="completed">Completed</button>
+          <button class="tab kind-tab is-active" data-kind="current">Current</button>
+          <button class="tab kind-tab" data-kind="completed">Completed</button>
         </div>
 
-        <!-- Row 2: Add / Update / Delete (changes per kind) -->
-        <div class="admin-section__tabs tabs-row tabs-build-action">
-        <button class="tab action-tab is-active" data-tab="add">Add</button>
-        <button class="tab action-tab" data-tab="update">Update</button>
-        <button class="tab action-tab" data-tab="delete">Delete</button>
+        <!-- Row 2a: Actions for CURRENT -->
+        <div class="admin-section__tabs tabs-row tabs-build-action is-active" data-kind="current">
+          <button class="tab action-tab is-active" data-tab="add">Add</button>
+          <button class="tab action-tab" data-tab="update">Update</button>
+          <button class="tab action-tab" data-tab="delete">Delete</button>
+        </div>
+
+        <!-- Row 2b: Actions for COMPLETED -->
+        <div class="admin-section__tabs tabs-row tabs-build-action" data-kind="completed" hidden>
+          <button class="tab action-tab is-active" data-tab="add">Add</button>
+          <button class="tab action-tab" data-tab="update">Update</button>
+          <button class="tab action-tab" data-tab="delete">Delete</button>
         </div>
     </div>
 
@@ -50,6 +57,14 @@
             <label>Description
             <textarea name="subtitle" rows="5" placeholder="A semi-lengthy description…" required></textarea>
             </label>
+            <div class="grid">
+              <label>Thumbnail Image (Visible on "Current Builds" Page)
+                <input type="file" name="thumb_image" accept="image/*" required>
+              </label>
+              <label>Fullscreen Main Image
+                <input type="file" name="hero_image" accept="image/*" required>
+              </label>
+            </div>
             <label>Photos (50–100+)
             <input type="file" name="photos" accept="image/*" multiple>
             </label>
@@ -76,6 +91,14 @@
             <label>Description
             <textarea name="subtitle" rows="5" placeholder="(no change)"></textarea>
             </label>
+            <div class="grid">
+              <label>Replace Thumbnail (optional)
+                <input type="file" name="thumb_image" accept="image/*">
+              </label>
+              <label>Replace Hero (optional)
+                <input type="file" name="hero_image" accept="image/*">
+              </label>
+            </div>
             <label>Add More Photos (optional)
             <input type="file" name="photos" accept="image/*" multiple>
             </label>
@@ -100,51 +123,207 @@
         <!-- Placeholder forms; we’ll customize fields after you tell me requirements -->
 
         <!-- ADD COMPLETED -->
-        <form class="panel is-active" id="completed-add" action="/admin/builds/add-completed" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="is_completed" value="true">
-            <!-- TODO: fields for completed builds; temporary minimal set -->
-            <div class="grid">
+        <form class="panel is-active" id="completed-add"
+              action="/admin/builds/add-completed"
+              method="post" enctype="multipart/form-data">
+
+          <input type="hidden" name="is_completed" value="true">
+
+          <!-- Basic -->
+          <div class="grid">
             <label>Owner Name
-                <input name="owner_name" required>
+              <input name="owner_name" placeholder="First Last" required>
             </label>
             <label>Name (Year Make Model)
-                <input name="name" required>
+              <input name="name" placeholder="1969 Camaro RS" required>
             </label>
+          </div>
+
+          <!-- ---------- SPEC SECTIONS ---------- -->
+          <fieldset class="specs">
+            <legend>Engine &amp; Drivetrain</legend>
+            <div class="spec-list" data-section="engine">
+              <!-- one input present by default -->
+              <div class="spec-row">
+                <input name="sections[engine][]" placeholder="e.g., 6.2L LS with mild cam & headers" required>
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
             </div>
-            <label>Description
-            <textarea name="subtitle" rows="5"></textarea>
+            <button type="button" class="btn-outline spec-add" data-target="engine">+ Add bullet</button>
+          </fieldset>
+
+          <fieldset class="specs">
+            <legend>Chassis &amp; Suspension</legend>
+            <div class="spec-list" data-section="chassis">
+              <div class="spec-row">
+                <input name="sections[chassis][]" placeholder="e.g., Coilovers w/ adjustable damping" required>
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-outline spec-add" data-target="chassis">+ Add bullet</button>
+          </fieldset>
+
+          <fieldset class="specs">
+            <legend>Interior &amp; Electronics</legend>
+            <div class="spec-list" data-section="interior">
+              <div class="spec-row">
+                <input name="sections[interior][]" placeholder="e.g., Digital dash cluster">
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-outline spec-add" data-target="interior">+ Add bullet</button>
+          </fieldset>
+
+          <fieldset class="specs">
+            <legend>Body &amp; Paint</legend>
+            <div class="spec-list" data-section="body">
+              <div class="spec-row">
+                <input name="sections[body][]" placeholder="e.g., Graphite grey, satin stripes">
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-outline spec-add" data-target="body">+ Add bullet</button>
+          </fieldset>
+
+          <!-- ---------- IMAGE SLOTS (single each) ---------- -->
+          <div class="grid">
+            <label>Thumbnail Image (Visible on "Completed Builds" Page)
+              <input type="file" name="thumb_image" accept="image/*" required>
             </label>
-            <label>Photos
+            <label>Fullscreen Main Image
+              <input type="file" name="hero_image" accept="image/*" required>
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>Section Image: Engine &amp; Drivetrain
+              <input type="file" name="image_engine" accept="image/*" required>
+            </label>
+            <label>Section Image: Chassis &amp; Suspension
+              <input type="file" name="image_chassis" accept="image/*" required>
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>Section Image: Interior &amp; Electronics
+              <input type="file" name="image_interior" accept="image/*" required>
+            </label>
+            <label>Section Image: Body &amp; Paint
+              <input type="file" name="image_body" accept="image/*" required>
+            </label>
+          </div>
+
+          <!-- ---------- EXTRA PHOTOS (like current) ---------- -->
+          <label>Additional Photos (optional, 50–100+)
             <input type="file" name="photos" accept="image/*" multiple>
-            </label>
-            <button type="submit" class="btn-red">Create Completed Build</button>
+          </label>
+
+          <button type="submit" class="btn-red">Create Completed Build</button>
         </form>
 
         <!-- UPDATE COMPLETED -->
         <form class="panel" id="completed-update" action="/admin/builds/update-completed" method="post" enctype="multipart/form-data">
-            <label>Select Completed Build
+          <label>Select Completed Build
             <select name="build_id" required>
-                <% (builds || []).filter(b => b.is_completed).forEach(b => { %>
+              <% (builds || []).filter(b => b.is_completed).forEach(b => { %>
                 <option value="<%= b.id %>"><%= b.name %></option>
-                <% }) %>
+              <% }) %>
             </select>
-            </label>
-            <!-- TODO: completed-specific fields -->
-            <div class="grid">
+          </label>
+
+          <div class="grid">
             <label>Owner Name
-                <input name="owner_name" placeholder="(no change)">
+              <input name="owner_name" placeholder="(no change)">
             </label>
-            <label>Name
-                <input name="name" placeholder="(no change)">
+            <label>Name (Year Make Model)
+              <input name="name" placeholder="(no change)">
             </label>
-            </div>
-            <label>Description
+          </div>
+
+          <label>Description
             <textarea name="subtitle" rows="5" placeholder="(no change)"></textarea>
+          </label>
+
+          <!-- ---------- SPEC SECTIONS (append-only here) ---------- -->
+          <fieldset class="specs">
+            <legend>Engine &amp; Drivetrain — add bullets</legend>
+            <div class="spec-list" data-section="engine">
+              <div class="spec-row">
+                <input name="sections[engine][]" placeholder="Add bullet (optional)">
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-outline spec-add" data-target="engine">+ Add bullet</button>
+            <p class="hint">These are appended. Existing bullets remain unchanged.</p>
+          </fieldset>
+
+          <fieldset class="specs">
+            <legend>Chassis &amp; Suspension — add bullets</legend>
+            <div class="spec-list" data-section="chassis">
+              <div class="spec-row">
+                <input name="sections[chassis][]" placeholder="Add bullet (optional)">
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-outline spec-add" data-target="chassis">+ Add bullet</button>
+          </fieldset>
+
+          <fieldset class="specs">
+            <legend>Interior &amp; Electronics — add bullets</legend>
+            <div class="spec-list" data-section="interior">
+              <div class="spec-row">
+                <input name="sections[interior][]" placeholder="Add bullet (optional)">
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-outline spec-add" data-target="interior">+ Add bullet</button>
+          </fieldset>
+
+          <fieldset class="specs">
+            <legend>Body &amp; Paint — add bullets</legend>
+            <div class="spec-list" data-section="body">
+              <div class="spec-row">
+                <input name="sections[body][]" placeholder="Add bullet (optional)">
+                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+              </div>
+            </div>
+            <button type="button" class="btn-outline spec-add" data-target="body">+ Add bullet</button>
+          </fieldset>
+
+          <!-- ---------- OPTIONAL REPLACEMENTS FOR FIXED IMAGES ---------- -->
+          <div class="grid">
+            <label>Replace Thumbnail (thumb.jpg)
+              <input type="file" name="thumb_image" accept="image/*">
             </label>
-            <label>Add More Photos (optional)
+            <label>Replace Hero (hero.jpg)
+              <input type="file" name="hero_image" accept="image/*">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>Replace Engine &amp; Drivetrain (1.jpg)
+              <input type="file" name="image_engine" accept="image/*">
+            </label>
+            <label>Replace Chassis &amp; Suspension (2.jpg)
+              <input type="file" name="image_chassis" accept="image/*">
+            </label>
+          </div>
+
+          <div class="grid">
+            <label>Replace Interior &amp; Electronics (3.jpg)
+              <input type="file" name="image_interior" accept="image/*">
+            </label>
+            <label>Replace Body &amp; Paint (4.jpg)
+              <input type="file" name="image_body" accept="image/*">
+            </label>
+          </div>
+
+          <!-- ---------- EXTRA PHOTOS (5.jpg+) ---------- -->
+          <label>Add More Photos (optional; becomes 5.jpg, 6.jpg, …)
             <input type="file" name="photos" accept="image/*" multiple>
-            </label>
-            <button type="submit" class="btn-red">Save Changes</button>
+          </label>
+
+          <button type="submit" class="btn-red">Save Changes</button>
         </form>
 
         <!-- DELETE COMPLETED -->
@@ -170,56 +349,66 @@
         <button class="tab" data-tab="update-sale">Update</button>
         <button class="tab" data-tab="delete-sale">Delete</button>
       </div>
-    </div>
+    </div> 
 
     <div class="admin-section__body">
       <!-- ADD SALE -->
-      <form class="panel is-active" id="add-sale" action="/admin/sale/add" method="post">
-        <div class="admin-grid">
-          <label>Title <input name="title" required></label>
-          <label>Price (USD) <input name="price" type="number" step="0.01" required></label>
-          <label>Status
-            <select name="status" required>
-              <option value="available">Available</option>
-              <option value="pending">Pending</option>
-              <option value="sold">Sold</option>
-            </select>
-          </label>
-          <label>Thumbnail URL <input name="thumb_url" type="url"></label>
-        </div>
-        <label>Description
-          <textarea name="description" rows="4"></textarea>
+      <form id="add-sale" class="panel is-active stack gap-m"
+        action="/admin/for-sale/add" method="post" enctype="multipart/form-data">
+        <label>
+          <span>Vehicle Name (Year, Make, Model)</span>
+          <input type="text" name="title" required maxlength="300" />
         </label>
-        <button type="submit" class="btn-red">Create Listing</button>
+
+        <label>
+          <span>Description</span>
+          <textarea name="description" rows="5" placeholder="Details, highlights, work done, etc."></textarea>
+        </label>
+
+        <fieldset style="margin-bottom: 16px;">
+          <legend>Photos (up to 16)</legend>
+          <input type="file" name="photos" accept="image/*" multiple />
+          <p class="hint">Suggested 8–12 photos. Max 16 will be saved.</p>
+        </fieldset>
+
+        <button type="submit" class="btn-red">Add For Sale Item</button>
       </form>
 
-      <!-- UPDATE SALE -->
-      <form class="panel" id="update-sale" action="/admin/sale/update" method="post">
-        <label>Select Item
-          <select name="item_id" required>
-            <% (forSale || []).forEach(i => { %>
-              <option value="<%= i.id %>"><%= i.title %> — $<%= i.price %></option>
-            <% }) %>
-          </select> 
-        </label>
-        <div class="admin-grid">
-          <label>Title <input name="title" placeholder="(no change)"></label>
-          <label>Price <input name="price" type="number" step="0.01" placeholder="(no change)"></label>
-          <label>Status
-            <select name="status">
-              <option value="">(no change)</option>
-              <option value="available">Available</option>
-              <option value="pending">Pending</option>
-              <option value="sold">Sold</option>
+      <!-- Update For-Sale -->
+      <div id="update-sale" class="panel stack gap-m">
+        <form action="/admin/for-sale/update" method="post" enctype="multipart/form-data" class="stack gap-m">
+
+          <!-- choose item -->
+          <label>
+            <span>Choose item</span>
+            <select name="item_id" id="fs-item-select" required>
+              <% (forSale || []).forEach(i => { %>
+                <option value="<%= i.id %>"><%= i.title %></option>
+              <% }) %>
             </select>
           </label>
-          <label>Thumbnail URL <input name="thumb_url" type="url" placeholder="(no change)"></label>
-        </div>
-        <label>Description
-          <textarea name="description" rows="4" placeholder="(no change)"></textarea>
-        </label>
-        <button type="submit" class="btn-red">Save Changes</button>
-      </form>
+
+          <!-- title -->
+          <label>
+            <span>Title</span>
+            <input type="text" name="title" id="fs-title" maxlength="160">
+          </label>
+
+          <!-- description -->
+          <label>
+            <span>Description</span>
+            <textarea name="description" id="fs-desc" rows="5"></textarea>
+          </label>
+
+          <!-- add new photos (appended after existing, total cap 16) -->
+          <fieldset>
+            <legend>Add photos (will append; total max 16)</legend>
+            <input type="file" name="new_photos" id="fs-new-photos" accept="image/*" multiple>
+          </fieldset>
+
+          <button type="submit" class="btn btn-primary">Save Changes</button>
+        </form>
+      </div>
 
       <!-- DELETE SALE -->
       <form class="panel" id="delete-sale" action="/admin/sale/delete" method="post" onsubmit="return confirmDelete(this)">
@@ -235,6 +424,16 @@
     </div>
   </section>
 
+
+
+
+
+
+
+
+
+
+
   <section class="admin-section" id="sec-team">
     <div class="admin-section__head">
       <h2>Team</h2>
@@ -247,11 +446,13 @@
 
     <div class="admin-section__body">
       <!-- ADD TEAM -->
-      <form class="panel is-active" id="add-team" action="/admin/team/add" method="post">
+      <form class="panel is-active" id="add-team" action="/admin/team/add" method="post" enctype="multipart/form-data">
         <div class="admin-grid">
           <label>Name <input name="name" required></label>
           <label>Role/Title <input name="role" required></label>
-          <label>Photo URL <input name="photo_url" type="url"></label>
+            <label>Photo
+              <input type="file" name="photo" accept="image/*">
+            </label>
         </div>
         <label>Bio
           <textarea name="bio" rows="4"></textarea>
@@ -260,7 +461,7 @@
       </form>
 
       <!-- UPDATE TEAM -->
-      <form class="panel" id="update-team" action="/admin/team/update" method="post">
+      <form class="panel" id="update-team" action="/admin/team/update" method="post" enctype="multipart/form-data">
         <label>Select Member
           <select name="member_id" required>
             <% (team || []).forEach(m => { %>
@@ -271,7 +472,12 @@
         <div class="admin-grid">
           <label>Name <input name="name" placeholder="(no change)"></label>
           <label>Role/Title <input name="role" placeholder="(no change)"></label>
-          <label>Photo URL <input name="photo_url" type="url" placeholder="(no change)"></label>
+          <fieldset>
+            <legend>Photo</legend>
+            <input type="file" name="photo" accept="image/*">
+            <label class="row" style="margin-top:.5rem">
+            </label>
+          </fieldset>
         </div>
         <label>Bio
           <textarea name="bio" rows="4" placeholder="(no change)"></textarea>
@@ -314,63 +520,147 @@
     });
     </script>
     <script>
-    // Keep your old simple script for other sections, but SKIP #sec-builds there.
-    // Then run this builds-only controller:
-
     (function () {
-        const sec = document.querySelector('#sec-builds');
-        if (!sec) return;
+      const sec = document.querySelector('#sec-builds');
+      if (!sec) return;
 
-        const kindTabs   = sec.querySelectorAll('.kind-tab');     // Current / Completed
-        const actionTabs = sec.querySelectorAll('.action-tab');   // Add / Update / Delete
-        const kindPanels = sec.querySelectorAll('.build-kind-panel');
+      const kindTabs    = sec.querySelectorAll('.kind-tab');
+      const kindPanels  = sec.querySelectorAll('.build-kind-panel');
 
-        function show(kind, action) {
-        // 1) Highlight only the chosen kind tab
-        kindTabs.forEach(btn => {
-            btn.classList.toggle('is-active', btn.dataset.kind === kind);
+      function show(kind, action) {
+        // highlight kind tab
+        kindTabs.forEach(btn => btn.classList.toggle('is-active', btn.dataset.kind === kind));
+
+        // show the correct kind panel
+        kindPanels.forEach(panel => panel.classList.toggle('is-active', panel.dataset.kindPanel === kind));
+
+        // toggle which action row is visible
+        sec.querySelectorAll('.tabs-build-action').forEach(row => {
+          const on = row.dataset.kind === kind;
+          row.classList.toggle('is-active', on);
+          row.toggleAttribute('hidden', !on);
         });
 
-        // 2) Show only the chosen kind panel
-        kindPanels.forEach(panel => {
-            panel.classList.toggle('is-active', panel.dataset.kindPanel === kind);
+        // activate the correct action tab within the visible row
+        const actionRow = sec.querySelector(`.tabs-build-action[data-kind="${kind}"]`);
+        const actionTabs = actionRow.querySelectorAll('.action-tab');
+        actionTabs.forEach(btn => btn.classList.toggle('is-active', btn.dataset.tab === action));
+
+        // show only the matching panel, e.g. "completed-update"
+        sec.querySelectorAll('.build-kind-panel .panel').forEach(p => p.classList.remove('is-active'));
+        const target = sec.querySelector(`#${kind}-${action}`);
+        if (target) target.classList.add('is-active');
+      }
+
+      // kind tab clicks → switch kind, default to "add"
+      kindTabs.forEach(btn => btn.addEventListener('click', () => show(btn.dataset.kind, 'add')));
+
+      // action tab clicks (delegated per row)
+      sec.querySelectorAll('.tabs-build-action').forEach(row => {
+        row.addEventListener('click', (e) => {
+          const btn = e.target.closest('.action-tab');
+          if (!btn) return;
+          show(row.dataset.kind, btn.dataset.tab);
         });
+      });
 
-        // 3) Highlight only the chosen action tab (do NOT touch kind tabs)
-        actionTabs.forEach(btn => {
-            btn.classList.toggle('is-active', btn.dataset.tab === action);
-        });
-
-        // 4) Show only the panel matching {kind}-{action}
-         sec.querySelectorAll('.build-kind-panel .panel')
-        .forEach(p => p.classList.remove('is-active'));
-
-        //    - Find the target by id across the whole builds section
-        const targetId = `${kind}-${action}`;   // e.g., "completed-update"
-        const target = sec.querySelector(`#${targetId}`);
-        if (target) {
-            target.classList.add('is-active');
-        } else {
-            console.warn('Panel not found:', targetId);
-        }
-    }
-
-        // Click handlers
-        kindTabs.forEach(btn => {
-        btn.addEventListener('click', () => show(btn.dataset.kind, 'add')); // default to Add on kind switch
-        });
-
-        actionTabs.forEach(btn => {
-        btn.addEventListener('click', () => {
-            const activeKind = sec.querySelector('.kind-tab.is-active')?.dataset.kind || 'current';
-            show(activeKind, btn.dataset.tab);
-        });
-        });
-
-        // Init
-        show('current', 'add');
+      // init
+      show('current', 'add');
     })();
     </script>
+
+    <script>
+      (function(){
+        const sec = document.getElementById('completed-add');
+        if (!sec) return;
+
+        // add new bullet
+        sec.querySelectorAll('.spec-add').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const key = btn.dataset.target;                          // engine | chassis | interior | body
+            const list = sec.querySelector(`.spec-list[data-section="${key}"]`);
+            if (!list) return;
+
+            const row = document.createElement('div');
+            row.className = 'spec-row';
+            row.innerHTML = `
+              <input name="sections[${key}][]" placeholder="Add another item">
+              <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+            `;
+            list.appendChild(row);
+          });
+        });
+
+        // remove a bullet (event delegation)
+        sec.addEventListener('click', (e) => {
+          if (e.target.classList.contains('spec-remove')) {
+            const row = e.target.closest('.spec-row');
+            if (!row) return;
+            const list = row.parentElement;
+            // keep at least one input present
+            if (list.querySelectorAll('.spec-row').length > 1) {
+              row.remove();
+            } else {
+              row.querySelector('input').value = '';
+            }
+          }
+        });
+      })();
+      </script>
+      <script>
+      (function(){
+        const form = document.getElementById('completed-update');
+        if (!form) return;
+
+        // add bullet row
+        form.querySelectorAll('.spec-add').forEach(btn => {
+          btn.addEventListener('click', () => {
+            const key = btn.dataset.target;
+            const list = form.querySelector(`.spec-list[data-section="${key}"]`);
+            const row = document.createElement('div');
+            row.className = 'spec-row';
+            row.innerHTML = `
+              <input name="sections[${key}][]" placeholder="Add bullet">
+              <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+            `;
+            list.appendChild(row);
+          });
+        });
+
+        // remove bullet row (keep at least one input)
+        form.addEventListener('click', (e) => {
+          if (!e.target.classList.contains('spec-remove')) return;
+          const row = e.target.closest('.spec-row');
+          const list = row.parentElement;
+          if (list.querySelectorAll('.spec-row').length > 1) {
+            row.remove();
+          } else {
+            row.querySelector('input').value = '';
+          }
+        });
+      })();
+      </script> 
+      <script>
+      (function () {
+        const sec = document.getElementById('sec-forsale');
+        if (!sec) return;
+
+        const tabs   = Array.from(sec.querySelectorAll('.admin-section__tabs .tab')); // Add / Update / Delete
+        const panels = Array.from(sec.querySelectorAll('.admin-section__body .panel')); // #add-sale, #update-sale, #delete-sale
+
+        function activate(id) {
+          tabs.forEach(t => t.classList.toggle('is-active', t.dataset.tab === id));
+          panels.forEach(p => p.classList.toggle('is-active', p.id === id));
+        }
+
+        tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+
+        // initial state
+        const current = tabs.find(t => t.classList.contains('is-active'))?.dataset.tab || 'add-sale';
+        activate(current);
+      })();
+      </script>
+
 
 
 

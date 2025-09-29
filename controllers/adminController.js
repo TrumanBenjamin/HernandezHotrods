@@ -12,13 +12,13 @@ exports.dashboard = async (req, res) => {
 
     // TODO: replace these with your real tables when ready
     const forSaleQ = pool.query(`
-      SELECT id, title, price
+      SELECT id, title, description, is_active, posted_at
       FROM for_sale_items
-      ORDER BY created_at DESC
+      ORDER BY posted_at DESC NULLS LAST, id DESC
     `).catch(() => ({ rows: [] })); // temp safety if table not ready
 
     const teamQ = pool.query(`
-      SELECT id, name, role
+      SELECT id, name, role, photo_url, bio 
       FROM team
       ORDER BY id DESC
     `).catch(() => ({ rows: [] }));
