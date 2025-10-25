@@ -1,63 +1,111 @@
 document.addEventListener('DOMContentLoaded', function () {
   
-  // ===== Lazy gallery loader (4 concurrent) =====
-
-  // end of lazy loader
 
 
 
-  // Global page reveal (waits for DOM + images + CSS background images, with a short fallback)
-  (function () {
+
+  // Global page reveal (DOM + <img> + CSS bg images, with timeout + min delay, bfcache-safe)
+(function () {
   const docEl = document.documentElement;
 
-  // Collect <img> tags
-  let imgs = Array.from(document.images); 
-  imgs = imgs.filter(img => !img.closest('.gallery-grid'));
-  // If we are on the home page, skip the hero + nav logos
-  if (document.body.classList.contains('is-home')) {
-    imgs = imgs.filter(img =>
-      !img.classList.contains('hero-logo') &&
-      !img.classList.contains('nav-logo')
+  function collectWaiters() {
+    // 1) <img> tags (skip gallery grid)
+    let imgs = Array.from(document.images).filter(img =>
+      !img.closest('.gallery-grid') && img.getAttribute('loading') !== 'lazy'
     );
+
+    // On home, skip hero + nav logo
+    if (document.body.classList.contains('is-home')) {
+      imgs = imgs.filter(img =>
+        !img.classList.contains('hero-logo') &&
+        !img.classList.contains('nav-logo')
+      );
+    }
+
+    // 2) CSS background images on elements with .bg-image
+    const bgEls = Array.from(document.querySelectorAll('.bg-image'));
+    const bgUrls = bgEls.map(el => {
+      const bg = getComputedStyle(el).backgroundImage;
+      const m = /url\(["']?([^"')]+)["']?\)/.exec(bg);
+      return m ? m[1] : null;
+    }).filter(Boolean);
+
+    const imgPromises = imgs.map(img => new Promise(resolve => {
+      if (img.complete) { img.classList.add('is-loaded'); return resolve(); }
+      img.addEventListener('load',  () => { img.classList.add('is-loaded'); resolve(); }, { once: true });
+      img.addEventListener('error', () => resolve(), { once: true });
+    }));
+
+    const bgPromises = bgUrls.map(src => new Promise(resolve => {
+      const im = new Image();
+      im.onload = im.onerror = () => resolve();
+      im.src = src;
+    }));
+
+    return { imgPromises, bgPromises, bgEls };
   }
 
-  // Collect elements that use CSS background images
-  const bgEls = Array.from(document.querySelectorAll('.bg-image'));
-  const bgUrls = bgEls.map(el => {
-    const bg = getComputedStyle(el).backgroundImage;
-    const m = /url\(["']?([^"')]+)["']?\)/.exec(bg); 
-    return m ? m[1] : null;
-  }).filter(Boolean);
+  function delay(ms) { return new Promise(r => setTimeout(r, ms)); }
 
-  // Promises for <img> tags
-  const imgPromises = imgs.map(img => new Promise(resolve => {
-    if (img.complete) {
-      img.classList.add('is-loaded');
-      return resolve();
-    }
-    img.addEventListener('load', () => { img.classList.add('is-loaded'); resolve(); }, { once: true });
-    img.addEventListener('error', resolve, { once: true });
-  }));
+  async function runReveal() {
+    const { imgPromises, bgPromises, bgEls } = collectWaiters();
 
-  // Promises for CSS background images
-  const bgPromises = bgUrls.map(src => new Promise(resolve => {
-    const im = new Image();
-    im.onload = im.onerror = () => resolve();
-    im.src = src;
-  }));
+    // TIMEOUT: never hang forever; MIN: avoid flipping before CSS/FOIT settles
+    const TIMEOUT_MS = 1200;
+    const MIN_MS = 180;
 
-  // Don’t hang forever — cap the wait (adjust if you want)
-  const TIMEOUT_MS = 1200;
-  const timeout = new Promise(res => setTimeout(res, TIMEOUT_MS));
+    const all = [...imgPromises, ...bgPromises]; // <-- spread the arrays!
+    // If there are no assets, Promise.all([]) resolves immediately; MIN smooths that
+    await Promise.race([ Promise.all(all), delay(TIMEOUT_MS) ]);
+    await delay(MIN_MS);
 
-  // When done (or timeout), mark bg elements as loaded and reveal the page
-  Promise.race([Promise.allSettled([imgPromises, bgPromises]), timeout]).then(() => {
     bgEls.forEach(el => el.classList.add('is-loaded'));
     docEl.classList.remove('is-loading');
     docEl.classList.add('is-ready');
+  }
+
+  runReveal();
+
+  // Handle bfcache restores (back/forward navigation)
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+      // Re-run the reveal so the animation plays again when revisiting
+      docEl.classList.remove('is-ready');
+      docEl.classList.add('is-loading');
+      runReveal();
+    }
   });
 })();
 // end of page load animation
+
+
+
+  // --- Mark every image as loaded when it finishes (for CSS translate/opacity) ---
+(function () {
+  const docEl = document.documentElement;
+  const allImgs = Array.from(document.images);
+
+  allImgs.forEach((img) => {
+    if (img.classList.contains('hero-logo')) return;
+    const mark = () => {
+      // If the page is already 'ready', add the class on the next frame
+      // so the browser sees a before/after change and runs the transition.
+      if (docEl.classList.contains('is-ready')) {
+        requestAnimationFrame(() => img.classList.add('is-loaded'));
+      } else {
+        img.classList.add('is-loaded');
+      }
+    };
+
+    if (img.complete) {
+      mark(); // cached or already decoded
+    } else {
+      img.addEventListener('load', mark,  { once: true });
+      img.addEventListener('error', mark, { once: true });
+    }
+  });
+})();
+
 
     // Set Landing Page Height!!
     function updateLandingHeight() {
@@ -179,91 +227,62 @@ document.addEventListener('DOMContentLoaded', function () {
   const topnav = document.querySelector('.site-header');
   const title = document.querySelector('.build-title-sticky');
   const hero = document.querySelector('.hero');
+  const wipSection = document.querySelector('.wip-section');
+  const completedContainer = document.querySelector('.container');
 
-  if (spacer && topnav && title && hero) {
-    function updateHeroSpacerHeight() {
-        requestAnimationFrame(() => {
-            const heroHeight = hero.offsetHeight;
-            const titleHeight = title.offsetHeight;
-            const topnavHeight = topnav.offsetHeight;
-
-            const totalOffset = titleHeight;
-
-            spacer.style.height = `calc(100vh - ${totalOffset}px)`;
-            console.log(`titleHeight = ${titleHeight}`)
-            console.log(`✅ Spacer height set to: 100vh - ${totalOffset}px`);
-        });
-    }
-
+  if (hero && (wipSection || completedContainer)) {
 
     // HERO OPACITY!!
     function updateHeroOpacity() {
       if (document.body.classList.contains('no-scroll')) return;
 
-      const fadeDistance = title.getBoundingClientRect().top + window.scrollY;
-      const scrollY = window.scrollY;
+      const fadeTarget = wipSection || completedContainer;
+      if (!fadeTarget) return;
 
-      let opacity = 1;
-      if (scrollY >= fadeDistance) {
-        opacity = 0;
-      } else {
-        opacity = 1 - (scrollY / fadeDistance);
-      }
+      const fadeTop = fadeTarget.getBoundingClientRect().top;
+      const fadeStart = window.innerHeight * 0; // start fading when next section is 25% from top
+      const fadeEnd = window.innerHeight * 0.85;   // fully faded near top
 
-      hero.style.opacity = opacity.toFixed(3);
-      if (opacity <= 0) {
-        hero.style.display = 'none';
-      } else {
-        hero.style.display ='';
+      const progress = Math.min(Math.max((fadeTop - fadeStart) / (fadeEnd - fadeStart), 0), 1);
+      hero.style.opacity = progress.toFixed(3);
+      if (title) {
+        title.style.opacity = hero.style.opacity;
       }
     }
 
-    window.addEventListener('load', updateHeroSpacerHeight);
-    window.addEventListener('resize', updateHeroSpacerHeight);
     window.addEventListener('scroll', updateHeroOpacity);
     window.addEventListener('load', updateHeroOpacity);
   }
 
-  // ────── Slide/Fade In with Stagger ──────
+    // ────── Scroll Direction Tracker ──────
+    let lastY = window.pageYOffset || document.documentElement.scrollTop || 0;
+    let scrollDir = 'down';
+
+    window.addEventListener('scroll', () => {
+      const y = window.pageYOffset || document.documentElement.scrollTop || 0;
+      scrollDir = y < lastY ? 'up' : 'down';
+      lastY = y;
+    }, { passive: true });
+
+  // ────── Slide/Fade In ──────
   const animatedEls = document.querySelectorAll('[data-animate]');
 
   const observer = new IntersectionObserver((entries, obs) => {
     entries.forEach(entry => {
       if (entry.isIntersecting) {
         const el = entry.target;
+
+        // Stamp the current scroll direction before revealing
+        el.setAttribute('data-reveal-dir', scrollDir); // "up" or "down"
+
         el.classList.add('visible');
         obs.unobserve(el); // Only animate once
       }
     });
-  }, { threshold: 0.15 });
+  }, { root: null, rootMargin: '120px 0px', threshold: 0.15 });
 
   animatedEls.forEach(el => observer.observe(el));
 
-
-
-  // Uncomment this code when you've made your gallery and start build sections!! 
-  // const revealOnce = (selector) => {
-  //   const element = document.querySelector(selector);
-  //   if (!element) return;
-
-  //   const revealObserver = new IntersectionObserver(
-  //     (entries, obs) => {
-  //       entries.forEach(entry => {
-  //         if (entry.isIntersecting) {
-  //           element.classList.add('revealed');
-  //           obs.unobserve(entry.target);
-  //         }  
-  //       });
-  //     },
-  //     { threshold: 0.2 }
-  //   );
-
-  //   element.classList.add('reveal');
-  //   revealObserver.observe(element);
-  // };
-
-  // revealOnce('.gallery');
-  // revealOnce('.cta');
 
 
 });

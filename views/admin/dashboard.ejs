@@ -150,6 +150,10 @@
               </div>
             </div>
             <button type="button" class="btn-outline spec-add" data-target="engine">+ Add bullet</button>
+            <label class="section-image">
+              <span>Section Image: Engine &amp; Drivetrain</span>
+              <input type="file" name="image_engine" accept="image/*" required>
+            </label>
           </fieldset>
 
           <fieldset class="specs">
@@ -246,80 +250,59 @@
 
           <!-- ---------- SPEC SECTIONS (append-only here) ---------- -->
           <fieldset class="specs">
-            <legend>Engine &amp; Drivetrain — add bullets</legend>
-            <div class="spec-list" data-section="engine">
-              <div class="spec-row">
-                <input name="sections[engine][]" placeholder="Add bullet (optional)">
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
-              </div>
-            </div>
+            <legend>Engine &amp; Drivetrain — bullets</legend>
+            <div class="spec-list" data-section="engine"></div>
             <button type="button" class="btn-outline spec-add" data-target="engine">+ Add bullet</button>
-            <p class="hint">These are appended. Existing bullets remain unchanged.</p>
           </fieldset>
 
           <fieldset class="specs">
-            <legend>Chassis &amp; Suspension — add bullets</legend>
-            <div class="spec-list" data-section="chassis">
-              <div class="spec-row">
-                <input name="sections[chassis][]" placeholder="Add bullet (optional)">
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
-              </div>
-            </div>
+            <legend>Chassis &amp; Suspension — bullets</legend>
+            <div class="spec-list" data-section="chassis"></div>
             <button type="button" class="btn-outline spec-add" data-target="chassis">+ Add bullet</button>
           </fieldset>
 
           <fieldset class="specs">
-            <legend>Interior &amp; Electronics — add bullets</legend>
-            <div class="spec-list" data-section="interior">
-              <div class="spec-row">
-                <input name="sections[interior][]" placeholder="Add bullet (optional)">
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
-              </div>
-            </div>
+            <legend>Interior &amp; Electronics — bullets</legend>
+            <div class="spec-list" data-section="interior"></div>
             <button type="button" class="btn-outline spec-add" data-target="interior">+ Add bullet</button>
           </fieldset>
 
           <fieldset class="specs">
-            <legend>Body &amp; Paint — add bullets</legend>
-            <div class="spec-list" data-section="body">
-              <div class="spec-row">
-                <input name="sections[body][]" placeholder="Add bullet (optional)">
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
-              </div>
-            </div>
+            <legend>Body &amp; Paint — bullets</legend>
+            <div class="spec-list" data-section="body"></div>
             <button type="button" class="btn-outline spec-add" data-target="body">+ Add bullet</button>
           </fieldset>
 
           <!-- ---------- OPTIONAL REPLACEMENTS FOR FIXED IMAGES ---------- -->
           <div class="grid">
-            <label>Replace Thumbnail (thumb.jpg)
+            <label>Replace Thumbnail Image (Visible on "Completed Builds" Page)
               <input type="file" name="thumb_image" accept="image/*">
             </label>
-            <label>Replace Hero (hero.jpg)
+            <label>Replace Fullscreen Main Image
               <input type="file" name="hero_image" accept="image/*">
             </label>
           </div>
 
           <div class="grid">
-            <label>Replace Engine &amp; Drivetrain (1.jpg)
+            <label>Replace Engine &amp; Drivetrain
               <input type="file" name="image_engine" accept="image/*">
             </label>
-            <label>Replace Chassis &amp; Suspension (2.jpg)
+            <label>Replace Chassis &amp; Suspension
               <input type="file" name="image_chassis" accept="image/*">
             </label>
           </div>
 
           <div class="grid">
-            <label>Replace Interior &amp; Electronics (3.jpg)
+            <label>Replace Interior &amp; Electronics
               <input type="file" name="image_interior" accept="image/*">
             </label>
-            <label>Replace Body &amp; Paint (4.jpg)
+            <label>Replace Body &amp; Paint
               <input type="file" name="image_body" accept="image/*">
             </label>
           </div>
 
           <!-- ---------- EXTRA PHOTOS (5.jpg+) ---------- -->
-          <label>Add More Photos (optional; becomes 5.jpg, 6.jpg, …)
+          <label>Add More Photos (optional, 50-100+)
             <input type="file" name="photos" accept="image/*" multiple>
           </label>
 
@@ -365,7 +348,7 @@
           <textarea name="description" rows="5" placeholder="Details, highlights, work done, etc."></textarea>
         </label>
 
-        <fieldset style="margin-bottom: 16px;">
+        <fieldset>
           <legend>Photos (up to 16)</legend>
           <input type="file" name="photos" accept="image/*" multiple />
           <p class="hint">Suggested 8–12 photos. Max 16 will be saved.</p>
@@ -388,30 +371,49 @@
             </select>
           </label>
 
+          <label>Is this listing active?:
+            <select name="is_active_mode">
+              <option value="">(no change)</option>
+              <option value="1">Set active</option>
+              <option value="0">Set inactive</option>
+            </select>
+          </label>
+
           <!-- title -->
           <label>
             <span>Title</span>
-            <input type="text" name="title" id="fs-title" maxlength="160">
+            <input type="text" name="title" placeholder="(no change)" id="fs-title" maxlength="160">
           </label>
 
           <!-- description -->
           <label>
             <span>Description</span>
-            <textarea name="description" id="fs-desc" rows="5"></textarea>
+            <textarea name="description" placeholder="(no change)" id="fs-desc" rows="5"></textarea>
           </label>
+
+          <!-- current photos grid (auto-loads when item changes) -->
+          <fieldset>
+            <legend>Current photos</legend>
+            <div id="fs-photo-grid" class="photo-grid"></div>
+            <p class="hint">Click delete to remove, or choose a new file to replace a photo.</p>
+          </fieldset>
 
           <!-- add new photos (appended after existing, total cap 16) -->
           <fieldset>
             <legend>Add photos (will append; total max 16)</legend>
-            <input type="file" name="new_photos" id="fs-new-photos" accept="image/*" multiple>
+            <div class="row" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+              <input type="file" name="new_photos" id="fs-new-photos" accept="image/*" multiple>
+              <button type="button" id="fs-upload-btn" class="btn-outline">Upload selected</button>
+              <span id="fs-upload-hint" class="hint" style="opacity:.85"></span>
+            </div>
           </fieldset>
 
-          <button type="submit" class="btn btn-primary">Save Changes</button>
+          <button type="submit" style="margin-top: 14px;" class="btn-red">Save Changes</button>
         </form>
       </div>
 
       <!-- DELETE SALE -->
-      <form class="panel" id="delete-sale" action="/admin/sale/delete" method="post" onsubmit="return confirmDelete(this)">
+      <form class="panel" id="delete-sale" action="/admin/for-sale/delete" method="post" onsubmit="return confirmDelete(this)">
         <label>Select Item to Delete
           <select name="item_id" required>
             <% (forSale || []).forEach(i => { %>
@@ -450,9 +452,12 @@
         <div class="admin-grid">
           <label>Name <input name="name" required></label>
           <label>Role/Title <input name="role" required></label>
-            <label>Photo
-              <input type="file" name="photo" accept="image/*">
+          <fieldset>
+            <legend>Photo</legend>
+            <input type="file" name="photo" accept="image/*">
+            <label class="row" style="margin-top:.5rem">
             </label>
+          </fieldset>
         </div>
         <label>Bio
           <textarea name="bio" rows="4"></textarea>
@@ -462,6 +467,22 @@
 
       <!-- UPDATE TEAM -->
       <form class="panel" id="update-team" action="/admin/team/update" method="post" enctype="multipart/form-data">
+        <div class="team-sorter">
+          <p class="hint">Drag to reorder team members (TOP TO BOTTOM)</p>
+          <ul id="team-sort-list">
+            <% (team || [])
+              .sort((a,b)=>(a.sort_order ?? 1e9)-(b.sort_order ?? 1e9))
+              .reverse()   // ← flip top/bottom in the UI
+              .forEach(m => { %>
+              <li class="team-sort-item" data-id="<%= m.id %>">
+                <span><%= m.name %></span>
+                <small style="opacity:.75"> — <%= m.role %></small>
+              </li>
+            <% }) %>
+          </ul>
+          <button type="button" id="save-team-order" class="btn-outline">Save Order</button>
+        </div>        
+        
         <label>Select Member
           <select name="member_id" required>
             <% (team || []).forEach(m => { %>
@@ -469,11 +490,14 @@
             <% }) %>
           </select>
         </label>
+
+
+
         <div class="admin-grid">
           <label>Name <input name="name" placeholder="(no change)"></label>
           <label>Role/Title <input name="role" placeholder="(no change)"></label>
           <fieldset>
-            <legend>Photo</legend>
+            <legend>Replace Photo</legend>
             <input type="file" name="photo" accept="image/*">
             <label class="row" style="margin-top:.5rem">
             </label>
@@ -485,7 +509,7 @@
         <button type="submit" class="btn-red">Save Changes</button>
       </form>
 
-      <!-- DELETE TEAM -->
+      <!-- DELETE TEAM-->
       <form class="panel" id="delete-team" action="/admin/team/delete" method="post" onsubmit="return confirmDelete(this)">
         <label>Select Member to Delete
           <select name="member_id" required>
@@ -570,6 +594,47 @@
     </script>
 
     <script>
+      (function () {
+        const form = document.getElementById('completed-update');
+        if (!form) return;
+
+        // When you create rows for existing bullets, set data-orig once:
+        // input.setAttribute('data-orig', originalText);
+
+        // Before submit, drop unchanged existing inputs from the payload
+        form.addEventListener('submit', () => {
+          const existingInputs = form.querySelectorAll('input[data-item-id][name^="sections_existing["]');
+          existingInputs.forEach(inp => {
+            const cur  = (inp.value || '').trim();
+            const orig = (inp.getAttribute('data-orig') || '').trim();
+            if (cur === orig) {
+              // Prevent unchanged items from being submitted
+              inp.setAttribute('data-skip', '1');
+              inp.removeAttribute('name');
+            }
+          });
+        });
+
+        // Optional: if user edits then goes back to original, restore name (so new edits still submit)
+        form.addEventListener('input', (e) => {
+          const inp = e.target.closest('input[data-item-id]');
+          if (!inp) return;
+          const cur  = (inp.value || '').trim();
+          const orig = (inp.getAttribute('data-orig') || '').trim();
+          const sectionKey = inp.getAttribute('data-section'); // set this when you inject rows
+          const id = inp.dataset.itemId;
+          if (!id || !sectionKey) return;
+
+          if (cur !== orig) {
+            if (!inp.name) inp.name = `sections_existing[${sectionKey}][${id}]`;
+          } else {
+            if (inp.name) inp.removeAttribute('name');
+          }
+        });
+      })();
+    </script>
+
+    <script>
       (function(){
         const sec = document.getElementById('completed-add');
         if (!sec) return;
@@ -627,39 +692,431 @@
           });
         });
 
-        // remove bullet row (keep at least one input)
+        // remove bullet row 
         form.addEventListener('click', (e) => {
           if (!e.target.classList.contains('spec-remove')) return;
-          const row = e.target.closest('.spec-row');
-          const list = row.parentElement;
-          if (list.querySelectorAll('.spec-row').length > 1) {
-            row.remove();
+          const btn = e.target;
+          const row = btn.closest('.spec-row');
+          if (!row) return;
+
+          // If this row represents an EXISTING bullet (has an ID), let the
+          // other delete logic (with its confirm) handle it. Do nothing here.
+          if (btn.dataset.itemId || row.querySelector('[data-item-id]')) return;
+
+          // Brand-new unsaved row: remove immediately (allow zero rows)
+          row.remove();
+        });
+
+         // Before submit, drop unchanged existing inputs from the payload
+        form.addEventListener('submit', () => {
+          const existingInputs = form.querySelectorAll('input[data-item-id][name^="sections_existing["]');
+          existingInputs.forEach(inp => {
+            const cur  = (inp.value || '').trim();
+            const orig = (inp.getAttribute('data-orig') || '').trim();
+            if (cur === orig) {
+              // Prevent unchanged items from being submitted
+              inp.setAttribute('data-skip', '1');
+              inp.removeAttribute('name');
+            }
+          });
+        });
+
+        // Optional: if user edits then goes back to original, restore name (so new edits still submit)
+        form.addEventListener('input', (e) => {
+          const inp = e.target.closest('input[data-item-id]');
+          if (!inp) return;
+          const cur  = (inp.value || '').trim();
+          const orig = (inp.getAttribute('data-orig') || '').trim();
+          const sectionKey = inp.getAttribute('data-section'); // set this when you inject rows
+          const id = inp.dataset.itemId;
+          if (!id || !sectionKey) return;
+
+          if (cur !== orig) {
+            if (!inp.name) inp.name = `sections_existing[${sectionKey}][${id}]`;
           } else {
-            row.querySelector('input').value = '';
+            if (inp.name) inp.removeAttribute('name');
           }
         });
       })();
       </script> 
       <script>
-      (function () {
-        const sec = document.getElementById('sec-forsale');
-        if (!sec) return;
+(function () {
+  const sec = document.getElementById('sec-forsale');
+  if (!sec) return;
 
-        const tabs   = Array.from(sec.querySelectorAll('.admin-section__tabs .tab')); // Add / Update / Delete
-        const panels = Array.from(sec.querySelectorAll('.admin-section__body .panel')); // #add-sale, #update-sale, #delete-sale
+  // Tabs wiring (same as yours)
+  const tabs   = Array.from(sec.querySelectorAll('.admin-section__tabs .tab'));
+  const panels = Array.from(sec.querySelectorAll('.admin-section__body .panel'));
+  function activate(id){
+    tabs.forEach(t => t.classList.toggle('is-active', t.dataset.tab === id));
+    panels.forEach(p => p.classList.toggle('is-active', p.id === id));
+  }
+  tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  const current = tabs.find(t => t.classList.contains('is-active'))?.dataset.tab || 'add-sale';
+  activate(current);
 
-        function activate(id) {
-          tabs.forEach(t => t.classList.toggle('is-active', t.dataset.tab === id));
-          panels.forEach(p => p.classList.toggle('is-active', p.id === id));
+  // Elements
+  const itemSelect = sec.querySelector('select[name="item_id"]');
+  const grid       = sec.querySelector('#fs-photo-grid');
+  const fileInput  = sec.querySelector('#fs-new-photos');   // <-- from the Add photos fieldset
+  const uploadBtn  = sec.querySelector('#fs-upload-btn');   // <-- "Upload selected" button
+  const hintEl     = sec.querySelector('#fs-upload-hint');  // <-- remaining-count hint
+
+  // Helper: update "remaining" message
+  function updateRemainingHint() {
+    if (!grid || !hintEl || !uploadBtn) return;
+    const count = grid.querySelectorAll('.photo-card').length;
+    const remaining = Math.max(0, 16 - count);
+    hintEl.textContent = `You can add up to ${remaining} more photo${remaining===1?'':'s'}.`;
+    uploadBtn.disabled = remaining === 0;
+  }
+
+  // Load photos for selected item (builds the grid)
+  async function loadPhotos(itemId){
+    if (!grid || !itemId) return;
+    grid.innerHTML = 'Loading…';
+    try {
+      const res = await fetch(`/admin/for-sale/${itemId}/photos`, { credentials: 'same-origin' });
+      const data = await res.json(); // [{id, url, sort_order}, ...]
+      grid.innerHTML = '';
+      if (!Array.isArray(data) || !data.length) {
+        grid.innerHTML = '<p class="hint">No photos yet.</p>';
+        updateRemainingHint();
+        return;
+      }
+      data.sort((a,b) => a.sort_order - b.sort_order).forEach(ph => {
+        const card = document.createElement('div');
+        card.className = 'photo-card';
+        card.innerHTML = `
+          <img src="${ph.url}" alt="photo ${ph.sort_order}">
+          <form action="/admin/for-sale/photo/replace" method="post" enctype="multipart/form-data">
+            <input type="hidden" name="item_id"  value="${itemId}">
+            <input type="hidden" name="photo_id" value="${ph.id}">
+            <label style="font-size:.85rem">Replace:
+              <input type="file" name="new_photo" accept="image/*" required>
+            </label>
+            <button type="submit" class="btn-outline">Replace</button>
+          </form>
+          <form action="/admin/for-sale/photo/delete" method="post">
+            <input type="hidden" name="item_id"  value="${itemId}">
+            <input type="hidden" name="photo_id" value="${ph.id}">
+            <button type="submit" class="btn-outline">Delete</button>
+          </form>
+        `;
+        grid.appendChild(card);
+      });
+      updateRemainingHint();
+    } catch (e) {
+      console.error(e);
+      grid.innerHTML = '<p class="bad">Failed to load photos.</p>';
+      updateRemainingHint();
+    }
+  }
+
+  // Live-replace preview without page reload
+  grid.addEventListener('submit', async (e) => {
+    const form = e.target.closest('form[action="/admin/for-sale/photo/replace"]');
+    if (!form) return;            // ignore other forms
+    e.preventDefault();
+
+    const card = form.closest('.photo-card');
+    const img  = card.querySelector('img');
+    const btn  = form.querySelector('button[type="submit"]');
+
+    try {
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = 'Replacing…';
+
+      const fd = new FormData(form);
+      fd.append('ajax', '1'); // tell server to return JSON
+
+      const res = await fetch(form.action, {
+        method: 'POST',
+        body: fd,
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!res.ok) throw new Error('Upload failed');
+      const data = await res.json(); // { ok:true, url:"/uploads/for-sale/ID/X.jpg" }
+
+      // Cache-bust so the new file shows immediately
+      const base = (data.url || img.src).split('?')[0];
+      img.src = `${base}?v=${Date.now()}`;
+
+      form.reset();
+      btn.textContent = 'Replaced ✓';
+      setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 800);
+    } catch (err) {
+      console.error(err);
+      btn.disabled = false;
+      alert('Could not replace the image. Please try again.');
+    }
+  });
+
+  // Live-delete without page reload
+  grid.addEventListener('submit', async (e) => {
+    const form = e.target.closest('form[action="/admin/for-sale/photo/delete"]');
+    if (!form) return; // ignore other forms
+    e.preventDefault();
+
+    if (!confirm('Delete this photo?')) return;
+
+    const card = form.closest('.photo-card');
+    const btn  = form.querySelector('button[type="submit"]');
+
+    try {
+      btn.disabled = true;
+      const originalText = btn.textContent;
+      btn.textContent = 'Deleting…';
+
+      const fd = new FormData(form);
+      fd.append('ajax', '1');
+
+      const res = await fetch(form.action, {
+        method: 'POST',
+        body: fd,
+        headers: { 'Accept': 'application/json' }
+      });
+
+      if (!res.ok) throw new Error('Delete failed');
+      await res.json(); // { ok:true }
+
+      card.remove(); // take it out of the grid
+      updateRemainingHint();
+    } catch (err) {
+      console.error(err);
+      alert('Could not delete photo. Please try again.');
+      btn.disabled = false;
+    }
+  });
+
+  // AJAX "Add photos" (no page reload)
+  if (uploadBtn && fileInput) {
+    uploadBtn.addEventListener('click', async () => {
+      const itemId = itemSelect?.value;
+      const files = fileInput.files;
+      if (!itemId) return alert('Select an item first.');
+      if (!files || !files.length) return alert('Choose one or more images.');
+
+      const fd = new FormData();
+      fd.append('item_id', itemId);
+      Array.from(files).forEach(f => fd.append('photos', f));
+      fd.append('ajax', '1');
+
+      const original = uploadBtn.textContent;
+      uploadBtn.disabled = true;
+      uploadBtn.textContent = 'Uploading…';
+
+      try {
+        const res = await fetch('/admin/for-sale/photos/add', {
+          method: 'POST',
+          body: fd,
+          headers: { 'Accept': 'application/json' }
+        });
+        const data = await res.json();
+        if (!res.ok || !data.ok) {
+          throw new Error(data?.error || 'Upload failed');
         }
+        // refresh grid + hint
+        await loadPhotos(itemId);
+        fileInput.value = '';
+        alert(data.message || 'Photos uploaded.');
+      } catch (err) {
+        console.error(err);
+        alert(err.message || 'Could not upload photos.');
+      } finally {
+        uploadBtn.textContent = original;
+        uploadBtn.disabled = false;
+      }
+    });
+  }
 
-        tabs.forEach(t => t.addEventListener('click', () => activate(t.dataset.tab)));
+  // Initial load + react to item change
+  if (itemSelect && grid) {
+    loadPhotos(itemSelect.value);
+    itemSelect.addEventListener('change', () => loadPhotos(itemSelect.value));
+  }
+})();
+</script>
+<script>
+(function(){
+  const list = document.getElementById('team-sort-list');
+  const save = document.getElementById('save-team-order');
+  if (!list || !save) return;
 
-        // initial state
-        const current = tabs.find(t => t.classList.contains('is-active'))?.dataset.tab || 'add-sale';
-        activate(current);
-      })();
-      </script>
+  // Simple HTML5 drag & drop
+  let dragEl = null;
+  list.querySelectorAll('.team-sort-item').forEach(li => {
+    li.draggable = true;
+    li.addEventListener('dragstart', () => { dragEl = li; li.classList.add('dragging'); });
+    li.addEventListener('dragend',   () => { li.classList.remove('dragging'); dragEl = null; });
+  });
+
+  list.addEventListener('dragover', (e) => {
+    e.preventDefault();
+    const after = [...list.querySelectorAll('.team-sort-item:not(.dragging)')]
+      .find(el => e.clientY <= el.getBoundingClientRect().top + el.offsetHeight/2);
+    if (!dragEl) return;
+    after ? list.insertBefore(dragEl, after) : list.appendChild(dragEl);
+  });
+
+  // Save new order
+  save.addEventListener('click', async () => {
+    const order = [...list.querySelectorAll('.team-sort-item')]
+      .map((li, i) => ({ id: li.dataset.id, sort: i+1 }));
+
+    try {
+      const res = await fetch('/admin/team/reorder', {
+        method: 'POST',
+        headers: { 'Content-Type':'application/json' },
+        body: JSON.stringify({ order })
+      });
+      if (!res.ok) throw new Error();
+      alert('Team order saved.');
+    } catch {
+      alert('Could not save order. Try again.');
+    }
+  });
+})();
+</script>
+<script>
+(function(){
+  const form = document.getElementById('completed-update');
+  if (!form) return;
+
+  // YOUR existing select for choosing a completed build
+  const select = form.querySelector('select[name="build_id"]');
+
+  // Map our four sections to the exact lists you already have
+  const lists = {
+    engine:   form.querySelector('.spec-list[data-section="engine"]'),
+    chassis:  form.querySelector('.spec-list[data-section="chassis"]'),
+    interior: form.querySelector('.spec-list[data-section="interior"]'),
+    body:     form.querySelector('.spec-list[data-section="body"]'),
+  };
+
+  // If you already have a function that creates a new row (e.g. addSpecRow),
+  // feel free to swap this out and call yours. This helper mirrors common markup:
+  function makeRow({ text = '', item_id = null }) {
+    const row = document.createElement('div');
+    row.className = 'spec-row';
+    row.innerHTML = `
+      <input
+        ${item_id ? `data-item-id="${item_id}"` : ''}
+        value="${(text || '').replace(/"/g, '&quot;')}"
+      >
+      <button type="button" class="spec-remove" ${item_id ? `data-item-id="${item_id}"` : ''}>&times;</button>
+    `;
+    return row;
+  }
+
+  // Optional: clear only the existing bullets that were injected previously.
+  // We tag injected rows so we don't touch any rows you added but haven't saved yet.
+  function clearInjected(listEl) {
+    Array.from(listEl.querySelectorAll('.spec-row[data-injected="1"]')).forEach(el => el.remove());
+  }
+
+  async function loadExisting(buildId) {
+    // clear previously injected rows in all lists
+    Object.values(lists).forEach(clearInjected);
+
+    // show a quick hint while loading (non-blocking)
+    Object.values(lists).forEach(el => {
+      if (!el.querySelector('.loading-hint')) {
+        const h = document.createElement('div');
+        h.className = 'loading-hint';
+        h.style.fontSize = '12px';
+        h.style.opacity = '0.7';
+        h.textContent = 'Loading existing bullets…';
+        el.prepend(h);
+        setTimeout(() => h.remove(), 600);
+      }
+    });
+
+    try {
+      const res = await fetch(`/admin/builds/${buildId}/sections`, { credentials:'same-origin' });
+      const data = await res.json();
+      if (!data.ok) throw new Error(data.error || 'Failed to load');
+
+      // For each of the four sections, inject existing items as normal rows
+      for (const key of Object.keys(lists)) {
+        const listEl = lists[key];
+        const items = data.sections?.[key]?.items || [];
+        items.forEach(it => {
+          const row = makeRow({ text: it.text, item_id: it.id });
+          row.dataset.injected = '1';           // mark as injected (existing)
+          listEl.appendChild(row);
+        });
+      }
+    } catch (e) {
+      console.error(e);
+      // soft error UI
+      Object.values(lists).forEach(el => {
+        const msg = document.createElement('div');
+        msg.className = 'bad';
+        msg.style.fontSize = '12px';
+        msg.textContent = 'Could not load existing bullets.';
+        el.prepend(msg);
+        setTimeout(() => msg.remove(), 2000);
+      });
+    }
+  }
+
+  // SAVE on explicit action (Ctrl+S on input or small save button you may add).
+  // If you prefer auto-save-on-blur, switch 'keydown' to 'blur' and remove the Ctrl+S check.
+  form.addEventListener('keydown', async (e) => {
+    if (e.key !== 's' || !e.ctrlKey) return;
+    const input = e.target.closest('input[data-item-id]');
+    if (!input) return;
+
+    e.preventDefault();
+    const id = input.dataset.itemId;
+    const fd = new FormData();
+    fd.append('item_id', id);
+    fd.append('text', input.value || '');
+
+    try {
+      const res = await fetch('/admin/builds/section-item/update', { method:'POST', body: fd });
+      if (!res.ok) throw new Error();
+      input.classList.add('saved');
+      setTimeout(() => input.classList.remove('saved'), 700);
+    } catch {
+      input.classList.add('error');
+      setTimeout(() => input.classList.remove('error'), 1000);
+      alert('Could not save. Try again.');
+    }
+  });
+
+  // DELETE: if row has data-item-id, delete via API; if it’s a brand-new unsaved row, keep your existing remove behavior
+  form.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.spec-remove');
+    if (!btn) return;
+
+    // Brand-new (no ID): let your current code handle it (if you have it)
+    if (!btn.dataset.itemId) return;
+
+    // Existing item: delete from DB, then remove row
+    if (!confirm('Delete this bullet?')) return;
+    const id = btn.dataset.itemId;
+    const row = btn.closest('.spec-row');
+
+    try {
+      const fd = new FormData();
+      fd.append('item_id', id);
+      const res = await fetch('/admin/builds/section-item/delete', { method:'POST', body: fd });
+      if (!res.ok) throw new Error();
+      row.remove();
+    } catch {
+      alert('Could not delete. Try again.');
+    }
+  });
+
+  // Load existing bullets when panel opens or when the build selection changes
+  if (select?.value) loadExisting(select.value);
+  select?.addEventListener('change', () => loadExisting(select.value));
+})();
+</script>
 
 
 

@@ -3,6 +3,8 @@ const app = express();
 const path = require('path');
 require('dotenv').config();
 const expressLayouts = require('express-ejs-layouts');
+const sharp = require('sharp');
+const fs = require('fs/promises');
 
 // NEW: Auth/session deps
 const { Pool } = require('pg');                                  // NEW
@@ -84,8 +86,6 @@ app.use((req, res, next) => {
 const staticRoutes = require('./routes/staticRoutes');
 app.use('/', staticRoutes);
 
-const servicesRoute = require('./routes/servicesRoute');
-app.use('/services', servicesRoute);
 
 const contactRoute = require('./routes/contactRoute');
 app.use('/contact', contactRoute);
@@ -111,7 +111,67 @@ app.use('/forSale', forSaleRoutes);
 const teamRoutes = require('./routes/team');
 app.use('/team', teamRoutes);
 
+const shopRoutes = require('./routes/shopRoute');
+app.use('/shop', shopRoutes);
+
 app.use('/', require('./routes/adminBuilds'));
+
+app.get('/img/:w/:q/*', async (req, res) => {
+  try {
+    const width = Math.max(1, Math.min(parseInt(req.params.w, 10) || 0, 3000)); // clamp 1..3000
+    const quality = Math.max(30, Math.min(parseInt(req.params.q, 10) || 0, 95)); // clamp 30..95
+    const relPath = req.params[0]; // original path after /img/w/q/
+
+    // Construct absolute path to original under /public
+    const srcAbs = path.join(__dirname, 'public', relPath);
+    const normalized = path.normalize(srcAbs);
+    const publicRoot = path.join(__dirname, 'public');
+
+    // Guard: must stay within /public
+    if (!normalized.startsWith(publicRoot)) return res.status(400).send('Bad path');
+
+    // Decide output format based on Accept header
+    const accept = req.headers['accept'] || '';
+    const toWebP = accept.includes('image/avif') || accept.includes('image/webp');
+
+    // Build cache path: /public/.cache/img/<w>_<q>_<hash-or-name>.(webp|jpg)
+    const cacheDir = path.join(publicRoot, '.cache', 'img');
+    await fs.mkdir(cacheDir, { recursive: true });
+
+    const baseName = relPath.replace(/[\\/]/g, '_'); // safe file name
+    const outExt = toWebP ? 'webp' : 'jpg';
+    const outName = `${width}_${quality}_${baseName}.${outExt}`;
+    const cacheAbs = path.join(cacheDir, outName);
+
+    // If cached file exists, stream it
+    try {
+      await fs.access(cacheAbs);
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+      res.type(outExt);
+      return res.sendFile(cacheAbs);
+    } catch (_) {}
+
+    // Generate
+    let pipeline = sharp(srcAbs).rotate(); // auto-orient
+    if (width) pipeline = pipeline.resize({ width, withoutEnlargement: true });
+
+    if (toWebP) {
+      pipeline = pipeline.webp({ quality });
+    } else {
+      pipeline = pipeline.jpeg({ quality, mozjpeg: true });
+    }
+
+    const buf = await pipeline.toBuffer();
+    await fs.writeFile(cacheAbs, buf);
+
+    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    res.type(outExt);
+    res.send(buf);
+  } catch (err) {
+    console.error('img proxy error:', err);
+    res.status(404).end();
+  }
+});
 
 // NEW (optional): quick check route to verify login works
 app.get('/whoami', (req, res) => res.json(req.user || null));

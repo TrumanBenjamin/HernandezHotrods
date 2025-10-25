@@ -8,7 +8,7 @@
       <% blocks.forEach((blk, i) => { %>
 
         <% if (i === 0) { %>
-          <div class="block-fade"></div>
+          <div class="btp-block"><span></span></div>
         <% } %> 
 
         <section class="block full-bleed <%= i % 2 === 1 ? 'mirror' : '' %>">
@@ -25,7 +25,20 @@
 
           <div class="media <%= i === 0 ? '' : 'delay' %>" <%= i === 0 ? '' : 'data-animate' %>>
             <% if (blk.imageUrl) { %>
-              <img src="<%= blk.imageUrl %>" alt="<%= blk.imageAlt %>">
+              <% const base = blk.imageUrl; %>
+              <img
+                src="/img/1600/70<%= base %>"
+                srcset="
+                  /img/800/65<%= base %> 800w,
+                  /img/1200/70<%= base %> 1200w,
+                  /img/1600/70<%= base %> 1600w,
+                  /img/2000/70<%= base %> 2000w"
+                sizes="(max-width: 900px) 100vw, 50vw"
+                alt="<%= blk.imageAlt %>"
+                loading="lazy"
+                decoding="async"
+                fetchpriority="low"
+              />
             <% } %>
           </div>
         </section>
@@ -37,28 +50,35 @@
 
   <%- include('../partials/startbuild') %>
 
-      <section class="gallery-grid" data-animate>
-      <% extraPhotos.forEach((p, i) => { %>
-        <figure class="gallery-item">
-          <% if (i < 4) { %>
-            <img
-              src="<%= p.url %>"
-              alt="<%= p.alt || (build.name + ' photo') %>"
-              loading="eager"
-              decoding="async">
-          <% } else { %>
-            <img
-              class="lazy"
-              data-src="<%= p.url %>"
-              src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
-              alt="<%= p.alt || (build.name + ' photo') %>"
-              loading="lazy"
-              decoding="async"
-              fetchpriority="low">
-          <% } %>
-        </figure>
-      <% }) %>
-    </section>
+  <section class="gallery-grid" data-animate>
+    <% extraPhotos.forEach((p, i) => { %>
+      <% if (i % 4 === 0) { %>
+        <section class="gallery-row"><!-- start row -->
+      <% } %>
+
+      <figure class="gallery-item" data-animate>
+        <% const base = p.url; %>
+        <img
+          class="lazy"
+          src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
+          data-src="/img/800/70<%= base %>"
+          data-srcset="
+            /img/400/65<%= base %> 400w,
+            /img/800/70<%= base %> 800w,
+            /img/1200/70<%= base %> 1200w,
+            /img/1600/70<%= base %> 1600w"
+          sizes="(max-width: 600px) 100vw, (max-width: 1200px) 50vw, 25vw"
+          alt="<%= p.alt || (build.name + ' photo') %>"
+          loading="lazy"
+          decoding="async"
+          fetchpriority="low">
+      </figure>
+
+      <% if (i % 4 === 3 || i === extraPhotos.length - 1) { %>
+        </section><!-- end row -->
+      <% } %>
+    <% }) %>
+  </section>
 
 
 </main>

@@ -4,5 +4,6 @@ const forSaleController = require('../controllers/forSaleController');
 
 // GET /for-sale
 router.get('/', forSaleController.index);
+router.get('/:id', forSaleController.show);
 
 module.exports = router;

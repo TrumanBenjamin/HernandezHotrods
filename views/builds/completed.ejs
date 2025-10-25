@@ -1,4 +1,4 @@
-<main>
+<main class="completed-builds">
 
   <div class="buildgrid">
     <div class="builds-title-wrap">
@@ -14,7 +14,20 @@
             <a href="/builds/<%= b.slug %>" class="cardlink">
               <figure class="thumbwrap" aria-label="<%= b.name %>">
                 <% if (b.image) { %>
-                  <img class="thumb" src="<%= b.image %>" alt="<%= b.name %>">
+                  <% const base = b.image; %>
+                  <img
+                    class="thumb"
+                    src="/img/800/70<%= base %>"
+                    srcset="
+                      /img/400/65<%= base %> 400w,
+                      /img/800/70<%= base %> 800w,
+                      /img/1200/70<%= base %> 1200w"
+                    sizes="(max-width: 600px) 100vw, (max-width: 1200px) 50vw, 33vw"
+                    alt="<%= b.name %>"
+                    loading="lazy"
+                    decoding="async"
+                    fetchpriority="low"
+                  >
                 <% } else { %>
                   <div class="thumb placeholder"></div>
                 <% } %>

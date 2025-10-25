@@ -1,8 +1,23 @@
 <section class="hero">
-  <img class="hero-img" src="<%= build.hero_image %>" alt="<%= build.name %>">
+  <% const heroBase = build.hero_image || build.thumb_image || '/images/fallbacks/hero.jpg'; %>
+  <img
+    class="hero-img"
+    src="/img/1600/70<%= heroBase %>"
+    srcset="
+      /img/800/65<%= heroBase %> 800w,
+      /img/1200/70<%= heroBase %> 1200w,
+      /img/1600/70<%= heroBase %> 1600w,
+      /img/2000/70<%= heroBase %> 2000w,
+      /img/2400/70<%= heroBase %> 2400w"
+    sizes="100vw"
+    alt="<%= build.name %>"
+    loading="eager"
+    decoding="async"
+    fetchpriority="high"
+  />
   <div class="hero-shadow"></div>
 </section>
-<div class="hero-spacer"></div>
+<div class="hero-placeholder"></div>
 <div class="build-title-sticky">
   <% const firstName = build.owner_name?.split(' ')[0]; %>
   <%= firstName %><%= firstName?.endsWith('s') ? "'" : "'s" %> <%= build.name %>

@@ -6,16 +6,22 @@
   <title><%= title %></title>
   <link rel="icon" type="image/x-icon" href="/images/favicon.ico">
   <link rel="stylesheet" href="/css/style.css">
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"/>
+  <link rel="preconnect" href="https://cdnjs.cloudflare.com">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/fontawesome.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/brands.min.css">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link rel="preload" href="/images/logo/hhrlogot.png" as="image">
   <link href="https://fonts.googleapis.com/css2?family=Abel&family=Bebas+Neue&family=IBM+Plex+Sans+Condensed:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;1,100;1,200;1,300;1,400;1,500;1,600;1,700&family=Mozilla+Headline:wght@200..700&family=Share+Tech&display=swap" rel="stylesheet">
   <link href="https://fonts.googleapis.com/css2?family=Arimo:ital,wght@0,400..700;1,400..700&family=TASA+Orbiter:wght@400..800&display=swap" rel="stylesheet">
   <script>document.documentElement.classList.add('is-loading');</script>
-
-  <!-- Any other shared assets like fonts, favicons, etc -->
 </head>
-<body class="<%= (typeof isHome !== 'undefined' && isHome) ? 'is-home' : '' %>">
+
+
+<body class="<%= [
+  (typeof isHome !== 'undefined' && isHome) ? 'is-home' : null,
+  (typeof bodyClass !== 'undefined' && bodyClass) ? bodyClass : null
+].filter(Boolean).join(' ') %>">
 
   <%- include('partials/header') %>
 
@@ -28,5 +34,55 @@
   <% if ((typeof isHome !== 'undefined' && isHome)) { %>
     <script src="/js/home.js"></script>
   <% } %>
+<script data-hover-gate>
+(() => {
+  const body = document.body;
+  if (!body.classList.contains('gate-hover')) return;
+
+  // always start blocked
+  body.classList.remove('hover-ready');
+
+  let loadedAt = 0;
+  let primed = false;
+  let lastX = null, lastY = null;
+
+  function onMove(e) {
+    // compare same clock to avoid cross-origin timestamp weirdness
+    if (performance.now() - loadedAt < 150) return;
+
+    if (!primed) {
+      primed = true;
+      lastX = e.clientX; lastY = e.clientY;
+      return;
+    }
+    if (e.clientX === lastX && e.clientY === lastY) return;
+
+    cleanup();
+    body.classList.add('hover-ready');
+  }
+
+  function arm() {
+    loadedAt = performance.now();
+    primed = false;
+    lastX = lastY = null;
+    window.addEventListener('pointermove', onMove, { capture: true, passive: true });
+  }
+  function cleanup() {
+    window.removeEventListener('pointermove', onMove, true);
+  }
+
+  window.addEventListener('load', arm, { once: true });
+  window.addEventListener('pageshow', (e) => {
+    if (e.persisted) {
+      body.classList.remove('hover-ready');
+      // page is already rendered; re-arm immediately with a fresh clock
+      loadedAt = performance.now();
+      primed = false;
+      lastX = lastY = null;
+      window.addEventListener('pointermove', onMove, { capture: true, passive: true });
+    }
+  });
+})();
+</script>
 </body>
 </html>

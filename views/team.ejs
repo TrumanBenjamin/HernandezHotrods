@@ -1,3 +1,35 @@
-<main>
-    <h1>i am team</h1>
+<main class="page page-team">
+
+  <div class="builds-title-wrap">
+    <h1 class="builds-title"><span>Meet The Team</span></h1>
+  </div>  
+
+  <section class="team-grid container">
+    <% (people || []).forEach(m => { %>
+      <article class="team-card" data-animate>
+        <div class="team-media">
+          <% const base = m.photo_url; %>
+          <img
+            class="team-photo"
+            src="/img/1200/70<%= base %>"
+            srcset="
+              /img/600/65<%= base %> 600w,
+              /img/900/70<%= base %> 900w,
+              /img/1200/70<%= base %> 1200w,
+              /img/1600/70<%= base %> 1600w"
+            sizes="(max-width: 820px) 100vw, 45vw"
+            alt="<%= m.name %> — <%= m.role %>"
+            loading="lazy"
+            decoding="async"
+            fetchpriority="low"
+          />
+          <header class="team-meta">
+            <h3 class="team-name"><%= m.name %></h3>
+            <p class="team-role"><%= m.role %></p>
+          </header>
+        </div>
+        <p class="team-bio"><%= m.bio %></p>
+      </article>
+    <% }) %>
+  </section>
 </main>

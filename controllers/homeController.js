@@ -6,6 +6,7 @@ exports.homePage = async (req, res) => {
     res.render('home', { 
       title: 'Home',
       isHome: true,
+      bodyClass: 'is-home',
       igPosts
     });
   } catch (err) {
