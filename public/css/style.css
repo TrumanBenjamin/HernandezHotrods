@@ -1159,7 +1159,7 @@ footer {
 
 .more-info {
   color: #9aa3af;
-  margin: 20px 0 0 0;
+  margin: 20px 110px 0 0;
 }
 .more-info a {
   text-decoration: none;
@@ -1177,7 +1177,11 @@ footer {
 @media (max-width: 1000px) {
   .contact-split { grid-template-columns: 1fr; min-height: unset; }
   .contact-media { height: 44vh; min-height: 320px; }
-  .contact-panel { border-left: none; border-top: 1px solid #232831; }
+  .contact-panel { 
+    border-left: none; 
+    border-top: 1px solid #232831; 
+    margin: 0;
+  }
   .biz-info { grid-template-columns: 1fr; }
 }
 
@@ -1223,12 +1227,15 @@ footer {
 .angle-caps > * { position: relative; z-index: 1; }
 
 /* Responsive: tone down or hide on small screens if needed */
-@media (max-width: 700px){
+@media (max-width: 740px){
   .angle-caps::before,
   .angle-caps::after{
-    height:140px;                /* shorter on mobile */
-    right:-16px;
+    content: none;
   }
+  .more-info {
+    margin: 20px 0 0 0;
+  }
+
 }
 
 
@@ -3221,6 +3228,11 @@ html.is-ready .gallery-grid img.is-loaded {
   background: radial-gradient(circle at 40% 30%, #161616 0%, #030303 80%);
   background-attachment: fixed;
   background-repeat: no-repeat;
+}
+
+.page-team .builds-title-wrap {
+  padding: 0 24px;
+  box-sizing: border-box;
 }
 
 /* Grid: two across desktop, full width mobile */
