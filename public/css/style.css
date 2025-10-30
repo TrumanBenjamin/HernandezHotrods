@@ -911,6 +911,7 @@ footer {
 .contact-media {
   position: relative;
   overflow: hidden;
+  background-color: #000;
 }
 
 /* For video option */
@@ -1093,6 +1094,12 @@ footer {
   color: #aab4c3;
 }
 
+.button-wrap {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
 
 /* original size + typography */
 .btn-send{
@@ -2513,7 +2520,6 @@ body.is-home .nav-logo.visible {
   .wip-intro {
     width: 90%;
     margin: 0px auto 20px;
-    padding: 16px;
   }
 }
 
@@ -3462,3 +3468,208 @@ body.gate-hover:not(.hover-ready) :is(
 
 
 /* end of build title FIXED */
+
+
+/* mobile media queries */
+
+@media (max-width: 426px) {
+  .nav-logo-img {
+    height: 26px !important;
+  }
+  .nav-toggle {
+    height: 18px;
+    width: 24px;
+  }
+  .site-header {
+    padding: 8px 16px;
+  }
+  .contact-form.slim input, .contact-form.slim textarea {
+    font-size: 12px;
+  }
+  .btn-send {
+    font-size: 16px;
+  }
+  .shop-message p {
+    margin: 0px;
+  }
+  .page.forSale .builds-title-wrap {
+    width: 90%;
+    margin: 0 auto;
+  }
+
+  .wip-heading {
+    font-size: 26px !important;
+    padding: 4px 50px 4px 30px
+  }
+  .wip-heading::after {
+    width: 20px;
+  }
+  .wip-paragraph {
+    font-size: 20px;
+  }
+
+  .page-team .builds-title-wrap {
+    margin: 0 auto;
+    padding: 0;
+  }
+  .page-team .team-name {
+    font-size: 30px;
+  }
+  .current-builds .builds-title-wrap {
+    width: 90%;
+    margin: 0 auto;
+    padding: 0;
+  }
+
+  .btp-block {
+    font-size: 15px;
+    height: 20px;
+  }
+  .cta-heading {
+    font-size: 22px;
+    padding: 0 20px;
+    text-align: left;
+  }
+  .cta.reveal {
+    padding: 60px 0;
+  }
+  .btn-cta {
+    padding: 6px 10px;
+  }
+  .btn-cta > span {
+    font-size: 16px;
+  }
+  .tick {
+    font-size: 18px;
+  }
+  .footer-socials .fa-facebook-f, .footer-socials .fa-instagram {
+    font-size: 16px;
+  }
+  .footer-socials {
+    margin-bottom: 4px;
+  }
+  footer {
+    font-size: 8px;
+    padding: 0;
+  }
+  footer p {
+    margin-top: 0;
+  }
+  .nav-links a {
+    margin: 0 20px 0 0;
+  }
+  .band-text {
+    font-size: 16px;
+  }
+  .btp img {
+    width: 65% !important;
+  }
+  .for-sale-divider {
+    width: 90%;
+  }
+  .page.forSale .btn-send {
+    margin: 0;
+    font-size: 20px;
+  }
+  .forSaleContact h2 {
+    font-size: 20px;
+  }
+  .nav-links .nav-account {
+    right: 20px;
+  }
+  .nav-overlay::before {
+    background-image: none;
+  }
+
+
+    /* Band inner: full-width info over blurred media background */
+  .band-inner {
+    position: relative;
+    display: block;        /* stack naturally */
+    padding: 0;
+    overflow: hidden;
+  }
+
+  .band-media {
+    position: absolute;
+    inset: 0;
+    z-index: 0;
+  }
+
+  .band--left, .band--right {
+    padding: 20px;
+  }
+
+  .band-media img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    filter: brightness(0.6) blur(2px);  /* darken + blur background */
+    transform: scale(1.1);              /* slight zoom for depth */
+  }
+
+  .band--left .band-media img, .band--right .band-media img {
+    mask-image: none;
+    -webkit-mask-image: none;
+  }
+
+  .band-info {
+    position: relative;
+    z-index: 1;
+    backdrop-filter: blur(3px);        /* soft glass effect */
+    -webkit-backdrop-filter: blur(3px);
+    color: #f1f1f1;
+    text-align: center;
+    padding: 60px 36px;
+    width: 100%;
+    box-sizing: border-box;
+  }
+
+  .band--left .band-info, .band--right .band-info {
+    background: rgba(0, 0, 0, 0.55);
+  }
+
+  .band--first {
+    padding-top: 0 !important;
+  }
+
+  .band-text {
+    max-width: 100%;
+    font-size: 16px;
+    line-height: 1.6;
+  }
+
+  .band-title {
+    font-size: 32px;
+    margin-bottom: 14px;
+  }
+
+  .band-info .btn-send {
+    font-size: 18px;
+    padding: 10px 24px;
+    margin-top: 20px;
+  }
+  .hero-top {
+    height: 70vh;
+  }
+  .home-hero {
+    height: auto;
+    min-height: auto;
+  }
+
+
+}
+
+@media (max-width: 769px) {
+  .nav-logo-img {
+    height: 36px !important;
+  }
+  .hero-logo {
+    width: 60vw;
+  }
+  .btp img {
+    width: 50%;
+  }
+}
+
+/* end of mobile media queries */

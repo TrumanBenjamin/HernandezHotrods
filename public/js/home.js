@@ -3,7 +3,13 @@
     const hero = document.querySelector('.home-hero');
     if (!hero) return;
     // True fullscreen section regardless of header/footer
-    hero.style.height = window.innerHeight + 'px';
+    if (window.innerWidth > 426) {
+      hero.style.height = window.innerHeight + 'px';
+    } else {
+      // Remove the inline height so CSS can take over on mobile
+      hero.style.removeProperty('height');
+      hero.style.removeProperty('min-height');
+    }
   }
 
   window.addEventListener('load', updateHomeHeroHeight);
