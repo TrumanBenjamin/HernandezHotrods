@@ -136,12 +136,7 @@ document.addEventListener('DOMContentLoaded', function () {
     // Run on load, resize, and when the media query crosses the breakpoint
     window.addEventListener('load', updateLandingHeight);
     window.addEventListener('resize', updateLandingHeight);
-    mq.addEventListener?.('change', updateLandingHeight); // (safe if supported)
 
-    // Optional: re-run after fonts settle to avoid a 1-frame jump
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(updateLandingHeight);
-    }
   })();
 
 
