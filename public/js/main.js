@@ -107,25 +107,42 @@ document.addEventListener('DOMContentLoaded', function () {
 })();
 
 
-    // Set Landing Page Height!!
+  // Set Landing Page Height (desktop-only ≥769px)
+  (function () {
+    const landing = document.querySelector('.builds-landing');
+    if (!landing) return;
+
+    const mq = window.matchMedia('(min-width: 769px)');
+
     function updateLandingHeight() {
+      // Only on desktop widths
+      if (!mq.matches) {
+        landing.style.removeProperty('height');
+        return;
+      }
+
       const header = document.querySelector('header');
       const footer = document.querySelector('footer');
-      const landing = document.querySelector('.builds-landing');
 
-      if (header && footer && landing) {
-        const headerHeight = header.getBoundingClientRect().height;
-        const footerHeight = footer.getBoundingClientRect().height;
-        const availableHeight = window.innerHeight - headerHeight - footerHeight;
+      if (!header || !footer) return;
 
-        console.log(headerHeight, footerHeight, availableHeight); // ✅ for debugging
+      const headerHeight = header.getBoundingClientRect().height;
+      const footerHeight = footer.getBoundingClientRect().height;
+      const available = Math.max(0, window.innerHeight - headerHeight - footerHeight);
 
-        landing.style.height = `${availableHeight}px`;
-      }
+      landing.style.height = `${available}px`;
     }
-    // ✅ Run it on load and resize
+
+    // Run on load, resize, and when the media query crosses the breakpoint
     window.addEventListener('load', updateLandingHeight);
     window.addEventListener('resize', updateLandingHeight);
+    mq.addEventListener?.('change', updateLandingHeight); // (safe if supported)
+
+    // Optional: re-run after fonts settle to avoid a 1-frame jump
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(updateLandingHeight);
+    }
+  })();
 
 
 
@@ -282,6 +299,133 @@ document.addEventListener('DOMContentLoaded', function () {
   }, { root: null, rootMargin: '120px 0px', threshold: 0.15 });
 
   animatedEls.forEach(el => observer.observe(el));
+
+  // BTP fade + scale: 0.6 → 1.0 and 0.98 → 1.04 as the image center reaches viewport center (desktop-only)
+  (function () {
+    const el = document.querySelector('.btp img');
+    if (!el) return;
+
+    const mq = window.matchMedia('(min-width: 426px)');
+
+    const clamp = (n, min, max) => Math.min(max, Math.max(min, n));
+    let ticking = false;
+
+    // ensure our transitions win (since we disabled the global one above)
+    function ensureDesktopTransition() {
+      if (mq.matches) {
+        el.style.transition = 'opacity 200ms linear, transform 200ms linear';
+      } else {
+        el.style.removeProperty('transition');
+        el.style.removeProperty('opacity');
+        el.style.removeProperty('transform');
+      }
+    }
+
+    function update() {
+      ticking = false;
+
+      if (!mq.matches) {
+        // below 769px: let CSS/mobile defaults apply
+        el.style.removeProperty('opacity');
+        el.style.removeProperty('transform');
+        return;
+      }
+
+      const rect = el.getBoundingClientRect();
+      const elCenter = rect.top + rect.height / 2;
+      const vpCenter = window.innerHeight / 2;
+
+      // progress from center→bottom of viewport
+      const range = window.innerHeight / 2; // center to bottom distance
+      const t = clamp(1 - (elCenter - vpCenter) / range, 0, 1); // 0..1, never decreases past center
+
+      // opacity: 0.5 → 0.8
+      const opacity = 0.5 + 0.3 * t;
+
+      el.style.opacity = opacity.toFixed(3);
+    }
+
+    function onScrollOrResize() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(update);
+      }
+    }
+
+    // wire up
+    ensureDesktopTransition();
+    update();
+
+    window.addEventListener('load', update);
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', () => { ensureDesktopTransition(); onScrollOrResize(); }, { passive: true });
+    mq.addEventListener?.('change', () => { ensureDesktopTransition(); update(); });
+  })();
+
+  // Pause the BTP slider while hero is in view
+  // (function(){
+  //   const track = document.querySelector('.btp-track');
+  //   const hero = document.querySelector('.home-hero');
+  //   if (!track || !hero) return;
+
+  //   const obs = new IntersectionObserver(entries => {
+  //     entries.forEach(e => {
+  //       track.style.animationPlayState = e.isIntersecting ? 'paused' : 'running';
+  //     });
+  //   }, { threshold: 0.6 });
+  //   obs.observe(hero);
+  // })();
+
+
+
+// === inside your BTP scroll script ===
+  (function () {
+    const mq = window.matchMedia('(min-width: 427px)');
+    const wrap = document.querySelector('.btp');
+    const img  = wrap?.querySelector('img');
+    if (!wrap || !img) return;
+
+    const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
+
+    let startRectTop = null; // element's top relative to viewport at measure time
+
+    // tune this: finish when the .btp top is dockPx from the top (not at 0)
+    let dockPx = 200; // ← e.g., finish 160px before reaching the very top
+
+    function measure() {
+      startRectTop = wrap.getBoundingClientRect().top; // anchor the start exactly where it is
+    }
+
+    function update() {
+      if (!mq.matches) { img.style.transform = ''; return; }
+
+      const rectTop = wrap.getBoundingClientRect().top;
+
+      // progress: 0 when rectTop === startRectTop, 1 when rectTop === dockPx
+      const denom = Math.max(1, startRectTop - dockPx); // avoid /0 if dockPx ≥ start
+      const t = clamp((startRectTop - rectTop) / denom, 0, 1);
+
+      // travel distance (within the btp container)
+      const maxShift = Math.max(0, wrap.clientWidth - img.clientWidth);
+      img.style.transform = `translateX(${(maxShift * t).toFixed(2)}px)`;
+    }
+
+    const onScroll = () => requestAnimationFrame(update);
+
+    window.addEventListener('load', () => { measure(); update(); });
+    window.addEventListener('resize', () => { measure(); update(); });
+    window.addEventListener('scroll', onScroll, { passive: true });
+
+    // optional: use a viewport fraction instead of pixels
+    // window.addEventListener('resize', () => { dockPx = window.innerHeight * 0.15; });
+
+    if (document.fonts && document.fonts.ready) {
+      document.fonts.ready.then(() => { measure(); update(); });
+    }
+  })();
+
+
+
 
 
 

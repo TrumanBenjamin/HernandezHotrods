@@ -1,4 +1,4 @@
-<main>
+<main class="show-completed">
 
   <%- include('../partials/build_hero') %>
 
@@ -49,7 +49,7 @@
 
 
   <%- include('../partials/startbuild') %>
-
+  <h1 class="adtlPhotos">Additional Photos</h1>
   <section class="gallery-grid" data-animate>
     <% extraPhotos.forEach((p, i) => { %>
       <% if (i % 4 === 0) { %>

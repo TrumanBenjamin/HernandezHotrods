@@ -6,7 +6,7 @@ const db = require('../db');
 // GET /builds — New Landing Page (Two-column UI)
 // ─────────────────────────────────────────────
 router.get('/', (req, res) => {
-  res.render('builds/index', { title: 'Builds', bodyClass: 'builds-index gate-hover'});
+  res.render('builds/index', { title: 'Builds', bodyClass: 'builds-index'});
 });
 
 // ─────────────────────────────────────────────
@@ -23,7 +23,7 @@ router.get('/current', async (req, res, next) => {
     `);
 
 
-    res.render('builds/current', { title: 'Current Builds', builds: rows, bodyClass: 'builds-current gate-hover' });
+    res.render('builds/current', { title: 'Current Builds', builds: rows, bodyClass: 'builds-current' });
   } catch (err) {
     next(err);
   }
@@ -42,7 +42,7 @@ router.get('/completed', async (req, res, next) => {
       ORDER BY created_at DESC
     `);
 
-    res.render('builds/completed', { title: 'Completed Builds', builds: rows, bodyClass: 'builds-completed gate-hover' });
+    res.render('builds/completed', { title: 'Completed Builds', builds: rows, bodyClass: 'builds-completed' });
   } catch (err) {
     next(err);
   }
