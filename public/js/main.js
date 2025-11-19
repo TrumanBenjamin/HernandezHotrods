@@ -421,6 +421,504 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
+  // full screen gallery view
+  // ===== Reusable Lightbox (gallery vs block scopes) =====
+  (function () {
+    // Accept clicks on any descendant of an element bearing data-lightbox
+    const CLICK_ATTR = 'data-lightbox';
+
+    // Build the overlay once
+    let lb = null, imgEl = null, btnPrev = null, btnNext = null, btnClose = null, counterEl = null;
+
+    function ensureOverlay() {
+      if (lb) return;
+      lb = document.createElement('div');
+      lb.className = 'lightbox';
+      lb.innerHTML = `
+        <div class="lightbox__inner">
+          <button class="lightbox__btn lightbox__close" aria-label="Close (Esc)"><svg width="20" height="20" viewBox="0 0 20 20" fill="none"
+       xmlns="http://www.w3.org/2000/svg">
+    <path d="M4 4L16 16M16 4L4 16"
+          stroke="#f1f5f9" stroke-width="2"
+          stroke-linecap="round" />
+  </svg></button>
+          <button class="lightbox__btn lightbox__prev" aria-label="Previous (←)">‹</button>
+          <img class="lightbox__img" alt="">
+          <button class="lightbox__btn lightbox__next" aria-label="Next (→)">›</button>
+          <div class="lightbox__counter" aria-live="polite"></div>
+        </div>
+      `;
+      document.body.appendChild(lb);
+
+      imgEl     = lb.querySelector('.lightbox__img');
+      btnPrev   = lb.querySelector('.lightbox__prev');
+      btnNext   = lb.querySelector('.lightbox__next');
+      btnClose  = lb.querySelector('.lightbox__close');
+      counterEl = lb.querySelector('.lightbox__counter');
+
+       // === START of new ZOOM / PAN code ===
+      if (!lb.dataset.zoomBound) {
+  lb.dataset.zoomBound = '1';
+
+  // ---- Zoom / Pan state ----
+  const MIN_SCALE = 1;
+  const MID_SCALE = 2;
+  const MAX_SCALE = 4;
+  const EPS = 0.001;
+
+  let scale = MIN_SCALE;
+  let tx = 0;
+  let ty = 0;
+  let prevTransition = "";
+
+  const drag = {
+    active: false,
+    x: 0,
+    y: 0,
+    startTx: 0,
+    startTy: 0,
+    moved: false,
+    suppressClick: false,
+  };
+
+  const inner = lb.querySelector('.lightbox__inner');
+
+  function applyTransform() {
+    // scale first, then translate: translation is in screen pixels
+    imgEl.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;
+  }
+
+  function updateZoomClasses() {
+    lb.classList.toggle('is-zoomed', scale > MIN_SCALE + EPS);
+    lb.classList.toggle('is-maxzoom', scale >= MAX_SCALE - EPS);
+  }
+
+  function clampPan() {
+    if (!inner) return;
+
+    const ir = inner.getBoundingClientRect();
+    const r = imgEl.getBoundingClientRect();
+
+    // Horizontal clamping
+    if (r.width <= ir.width || Math.abs(scale - MIN_SCALE) < EPS) {
+      // Center horizontally
+      const cxImg = r.left + r.width / 2;
+      const cxInner = ir.left + ir.width / 2;
+      const dx = cxInner - cxImg;
+      tx += dx;
+    } else {
+      // Prevent gaps left/right
+      if (r.left > ir.left) {
+        tx += ir.left - r.left;
+      } else if (r.right < ir.right) {
+        tx += ir.right - r.right;
+      }
+    }
+
+    // Vertical clamping
+    if (r.height <= ir.height || Math.abs(scale - MIN_SCALE) < EPS) {
+      // Center vertically
+      const cyImg = r.top + r.height / 2;
+      const cyInner = ir.top + ir.height / 2;
+      const dy = cyInner - cyImg;
+      ty += dy;
+    } else {
+      // Prevent gaps top/bottom
+      if (r.top > ir.top) {
+        ty += ir.top - r.top;
+      } else if (r.bottom < ir.bottom) {
+        ty += ir.bottom - r.bottom;
+      }
+    }
+  }
+
+  function resetZoom(animated) {
+    scale = MIN_SCALE;
+    tx = 0;
+    ty = 0;
+    updateZoomClasses();
+
+    if (animated) {
+      applyTransform();
+    } else {
+      const old = imgEl.style.transition;
+      imgEl.style.transition = 'none';
+      applyTransform();
+      void imgEl.offsetWidth; // force reflow
+      imgEl.style.transition = old;
+    }
+  }
+
+  // Allow show() to reset zoom instantly when switching images
+  lb.resetZoom = () => resetZoom(false);
+
+  function zoomAt(clientX, clientY, targetScale) {
+    let newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, targetScale));
+    const oldScale = scale;
+
+    if (Math.abs(newScale - oldScale) < EPS) return;
+
+    // If we're going back to 1x, always fully reset to original position
+    if (newScale === MIN_SCALE) {
+      resetZoom(true);
+      return;
+    }
+
+    // Keep the point under the cursor stable while zooming
+    const ir = inner.getBoundingClientRect();
+    const cx = ir.left + ir.width / 2;
+    const cy = ir.top + ir.height / 2;
+
+    const dx = clientX - cx;
+    const dy = clientY - cy;
+
+    // Derived formula: tx' = tx + dx * (1 - newScale / oldScale)
+    tx = tx + dx * (1 - newScale / oldScale);
+    ty = ty + dy * (1 - newScale / oldScale);
+
+    scale = newScale;
+    clampPan();
+    applyTransform();
+    updateZoomClasses();
+  }
+
+  // ---- Click to zoom: 1x -> MID -> MAX -> 1x, always at click point ----
+  imgEl.addEventListener('click', (e) => {
+    if (drag.suppressClick) {
+      drag.suppressClick = false;
+      return;
+    }
+
+    let target;
+    if (scale < MID_SCALE - EPS) {
+      target = MID_SCALE;
+    } else if (scale < MAX_SCALE - EPS) {
+      target = MAX_SCALE;
+    } else {
+      target = MIN_SCALE;
+    }
+
+    zoomAt(e.clientX, e.clientY, target);
+  });
+
+  // ---- Wheel zoom around cursor ----
+  let wheelRAF = null;
+  imgEl.addEventListener('wheel', (e) => {
+    e.preventDefault();
+
+    const clientX = e.clientX;
+    const clientY = e.clientY;
+    const delta = -e.deltaY; // up = zoom in
+
+    let factor = delta > 0 ? 1.2 : 1 / 1.2;
+    let target = scale * factor;
+
+    if (target < MIN_SCALE + 0.01) target = MIN_SCALE;
+    if (target > MAX_SCALE) target = MAX_SCALE;
+
+    if (wheelRAF) cancelAnimationFrame(wheelRAF);
+    wheelRAF = requestAnimationFrame(() => {
+      wheelRAF = null;
+      zoomAt(clientX, clientY, target);
+    });
+  }, { passive: false });
+
+  // ---- Drag / pan when zoomed ----
+  imgEl.addEventListener('mousedown', (e) => {
+    if (scale <= MIN_SCALE + EPS) return;
+    e.preventDefault();
+
+    drag.active = true;
+    drag.moved = false;
+    drag.suppressClick = false;
+    drag.x = e.clientX;
+    drag.y = e.clientY;
+    drag.startTx = tx;
+    drag.startTy = ty;
+
+    prevTransition = imgEl.style.transition;
+    imgEl.style.transition = 'none';
+    imgEl.style.cursor = 'grabbing';
+  });
+
+  window.addEventListener('mousemove', (e) => {
+    if (!drag.active) return;
+
+    const dx = e.clientX - drag.x;
+    const dy = e.clientY - drag.y;
+
+    if (!drag.moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
+      drag.moved = true;
+    }
+
+    if (!drag.moved) return;
+
+    tx = drag.startTx + dx;
+    ty = drag.startTy + dy;
+    clampPan();
+    applyTransform();
+  });
+
+  window.addEventListener('mouseup', () => {
+    if (!drag.active) return;
+
+    drag.active = false;
+    imgEl.style.cursor = scale > MIN_SCALE + EPS ? 'grab' : 'zoom-in';
+
+    if (drag.moved) {
+      drag.suppressClick = true;
+      setTimeout(() => { drag.suppressClick = false; }, 0);
+    }
+
+    imgEl.style.transition = prevTransition || '';
+    prevTransition = '';
+
+    clampPan();
+    applyTransform();
+  });
+
+  // Make sure current image is at 1x, centered, when the lightbox is first opened
+  resetZoom(false);
+}
+
+      // === END of new ZOOM / PAN code ===
+
+
+
+      // Close on backdrop click or image click
+      lb.addEventListener('click', (e) => {
+        const inner = lb.querySelector('.lightbox__inner');
+        if (!inner.contains(e.target)) close();
+      });
+      btnPrev.addEventListener('click', () => nav(-1));
+      btnNext.addEventListener('click', () => nav(1));
+      btnClose.addEventListener('click', close);
+
+      // Keyboard
+      document.addEventListener('keydown', (e) => {
+        if (!lb.classList.contains('open')) return;
+        if (e.key === 'Escape') close();
+        else if (e.key === 'ArrowRight') nav(1);
+        else if (e.key === 'ArrowLeft') nav(-1);
+      });
+
+      // Basic swipe
+      let sx = 0, sy = 0, sw = false;
+      lb.addEventListener('touchstart', (e) => {
+        if (!e.touches[0]) return;
+        sx = e.touches[0].clientX; sy = e.touches[0].clientY; sw = true;
+      }, { passive: true });
+      lb.addEventListener('touchend', (e) => {
+        if (!sw) return;
+        sw = false;
+        const t = e.changedTouches[0];
+        const dx = t.clientX - sx, dy = t.clientY - sy;
+        if (Math.abs(dx) > Math.max(50, Math.abs(dy) * 1.5)) nav(dx < 0 ? 1 : -1);
+      }, { passive: true });
+    }
+
+    // Current state
+    let group = [];
+    let idx = 0;
+
+    function getBestSrc(node) {
+      // Prefer data-full, else currentSrc/src, else the biggest srcset candidate
+      const el = node.tagName === 'IMG' ? node : node.querySelector('img');
+      if (!el) return '';
+      const df = el.getAttribute('data-full');
+      if (df) return df;
+      if (el.currentSrc) return el.currentSrc;
+      if (el.src) return el.src;
+      const ss = el.getAttribute('srcset');
+      if (ss) {
+        // pick the last (usually largest) candidate
+        const last = ss.split(',').slice(-1)[0].trim().split(' ')[0];
+        return last || '';
+      }
+      return '';
+    }
+
+    function openFrom(targetEl) {
+      ensureOverlay();
+
+      // Find the closest group-bearing element
+      const itemEl = targetEl.closest(`[${CLICK_ATTR}]`);
+      if (!itemEl) return;
+
+      const groupName = itemEl.getAttribute(CLICK_ATTR);
+      let scopeRoot;
+
+      if (groupName === 'gallery') {
+        scopeRoot = itemEl.closest('.gallery-grid');
+      } else if (groupName === 'block') {
+        scopeRoot = document.querySelector('.show-completed .container');
+      }
+
+      if (!scopeRoot) return;
+
+      const nodes = Array.from(
+        scopeRoot.querySelectorAll(`[${CLICK_ATTR}="${groupName}"]`)
+      );
+
+      group = nodes.map(n => ({
+        node: n,
+        src: getBestSrc(n),
+        alt: (n.getAttribute('alt') || n.querySelector('img')?.getAttribute('alt') || '')
+      }));
+
+      // Index of the clicked item
+      idx = Math.max(0, nodes.indexOf(itemEl));
+      show(idx);
+
+      // Open overlay & lock scroll
+      // ensure we start from the "clxosed" state, then animate into open
+      lb.classList.remove('closing');
+      lb.classList.remove('open');   // make sure it's in the base state
+
+      requestAnimationFrame(() => {
+        lb.classList.add('open');
+      });
+
+      // Freeze page at current scroll position
+      const y = window.scrollY;
+      document.body.dataset.scrollY = String(y);
+      document.body.classList.add('no-scroll');
+      document.body.style.top = `-${y}px`;
+
+      // Preload neighbors
+      preload(idx + 1);
+      preload(idx - 1);
+    }
+
+    
+
+    function show(i) {  
+      const item = group[i];
+      if (!item) return;
+      lb?.resetZoom?.();
+      imgEl.alt = item.alt;
+      imgEl.src = item.src;         // might be data-full or currentSrc
+      counterEl.textContent = `${i + 1} / ${group.length}`;
+    }
+
+    function nav(step) {
+      if (!group.length) return;
+      idx = (idx + step + group.length) % group.length;
+      show(idx);
+      preload(idx + (step > 0 ? 1 : -1));
+    }
+
+    function preload(i) {
+      if (!group.length) return;
+      const ii = (i + group.length) % group.length;
+      const pre = new Image();
+      pre.src = group[ii].src;
+    }
+
+    function close() {
+      // Start backdrop fade (purely visual)
+      lb.classList.remove('open');
+      lb.classList.add('closing');
+
+      // Clear the image immediately
+      const imgEl = lb.querySelector('.lightbox__img');
+      if (imgEl) {
+        imgEl.removeAttribute('src');
+        imgEl.removeAttribute('srcset');
+        imgEl.removeAttribute('alt');
+      }
+
+      // 🔥 Immediately restore scroll – no more waiting on animations
+      const saved = parseInt(document.body.dataset.scrollY || "0", 10);
+      document.body.classList.remove('no-scroll');
+      document.body.style.top = "";
+      window.scrollTo(0, saved);
+
+      // Let the closing animation run on its own,
+      // then just clear the `.closing` class so it's reset for next time.
+      // (If you re-open before this fires, `openFrom` will remove `closing` anyway.)
+      setTimeout(() => {
+        lb.classList.remove('closing');
+      }, 500); // match or slightly exceed your CSS close duration
+    }
+
+
+    // Delegate clicks globally (works for both gallery + block)
+    document.addEventListener('click', (e) => {
+      const trigger = e.target.closest(`[${CLICK_ATTR}]`);
+      if (!trigger) return;
+      e.preventDefault();
+      openFrom(e.target);
+    });
+  })();
+
+
+
+    // ────── For Sale divider width on scroll ──────
+  (function () {
+    const dividers = document.querySelectorAll('.for-sale-divider');
+    if (!dividers.length) return;
+
+    const MIN_W = 40; // %
+    const MAX_W = 70; // %
+
+    let ticking = false;
+
+    function computeWidthForDivider(rect, vh) {
+      const center = rect.top + rect.height / 2;
+      const f = center / vh; // 0 = top, 1 = bottom
+
+      const topThreshold = 0.15; // top 15% of screen
+      const bottomThreshold = 1.0; // we’ll fade from center down to bottom
+
+      let width;
+
+      if (f >= 0.5) {
+        // Between center and bottom:
+        //  center (0.5) => 70%, bottom (1.0) => 40%
+        const tBottom = Math.min(1, (f - 0.5) / (bottomThreshold - 0.5));
+        width = MAX_W - (MAX_W - MIN_W) * tBottom;
+      } else if (f >= topThreshold && f < 0.5) {
+        // Between top 15% line and center: stay at max width
+        width = MAX_W;
+      } else {
+        // Above the top 15% line:
+        //  f = topThreshold => 70%, f = 0 => 40%
+        const tTop = Math.min(1, (topThreshold - f) / topThreshold);
+        width = MAX_W - (MAX_W - MIN_W) * tTop;
+      }
+
+      return width;
+    }
+
+    function updateDividerWidths() {
+      ticking = false;
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+
+      dividers.forEach(divider => {
+        const rect = divider.getBoundingClientRect();
+        const width = computeWidthForDivider(rect, vh);
+        divider.style.width = width.toFixed(2) + '%';
+      });
+    }
+
+    function onScrollOrResize() {
+      if (ticking) return;
+      ticking = true;
+      requestAnimationFrame(updateDividerWidths);
+    }
+
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize, { passive: true });
+    window.addEventListener('load', updateDividerWidths);
+
+    // initial run
+    updateDividerWidths();
+  })();
+  // ────── End of For Sale divider width on scroll ──────
+
+
+
 
 
 

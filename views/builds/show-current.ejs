@@ -41,7 +41,9 @@
             alt="<%= p.alt || (build.name + ' photo') %>"
             loading="lazy"
             decoding="async"
-            fetchpriority="low">
+            fetchpriority="low"
+            data-lightbox="gallery"       
+            data-full="/img/2000/70<%= base %>">>
         </figure>
 
         <% if (i % 4 === 3 || i === extraPhotos.length - 1) { %>

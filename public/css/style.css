@@ -348,7 +348,7 @@ footer {
       z-index: 2;
     }
 .cta.reveal {
-  padding: 120px 0;
+  padding: 80px 0;
   background-color: #030303;
   /* border: 1px solid #141414; */
 }
@@ -754,10 +754,10 @@ footer {
 
 /* the moving belt */
 .ticker {
-  display: flex;
+  display: flex; 
   gap: 11px;               /* space between Track A and B */
   width: max-content;
-  animation: ticker-move 20s linear infinite;
+  animation: ticker-move 30s linear infinite;
   will-change: transform;
 }
 
@@ -776,6 +776,7 @@ footer {
   margin-left: -17px;     
   background: #c72828;
   opacity: .9;
+  transform: translateY(-5%);
 }
 
 /* duplicate tracks so it loops seamlessly */
@@ -801,9 +802,9 @@ footer {
   content: "";
   position: absolute;
   left: -17px; top: 50%;
-  width: 6px; height: 17px;
+  width: 6px; height: 21px;
   background: #c72828;               /* your red accent */
-  transform: translateY(-50%);
+  transform: translateY(-53%);
   opacity: .9;
 }
 .ticker__track .tick:first-child::before { display: none; }
@@ -1182,7 +1183,7 @@ footer {
 
 .more-info {
   color: #9aa3af;
-  margin: 20px 110px 0 0;
+  margin: 10px 110px 0 0;
 }
 .more-info a {
   text-decoration: none;
@@ -1269,7 +1270,7 @@ footer {
 /* Landing Page */
 
 .builds-landing {
-  width: 80vw;
+  width: 71vw;
   margin: 100px auto 0;
   display: flex;
   gap: 2px;
@@ -2826,14 +2827,14 @@ html.is-ready .gallery-grid img.is-loaded {
 
 .for-sale-divider{
   position: relative;
-  width: 60%;                 /* centered, 60% of the container */
+  width: 40%;      
   height: var(--fsd-height);
   margin: 140px auto 0;     /* center + spacing */
   background: var(--fsd-mid); /* dark center */
   overflow: hidden;
   /* box-shadow: inset 0 0 20px rgba(0, 0, 0, .55); */
     -webkit-mask-image: linear-gradient(
-    to right,
+    to center,
     transparent 0,
     #000 var(--fsd-edge),
     #000 calc(100% - var(--fsd-edge)),
@@ -3531,6 +3532,221 @@ body.gate-hover:not(.hover-ready) :is(
     width: 55%;
   }
 }
+
+
+
+/* full screen gallery viewer */
+/* === Lightbox (fullscreen viewer) === */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  z-index: 100000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* Solid, reliable background: */
+  background-color: rgba(0,0,0,0.9);
+  isolation: isolate;
+  will-change: opacity, backdrop-filter;
+  contain: paint;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  /* transition: opacity .5s ease,
+  backdrop-filter .5s ease, 
+  -webkit-backdrop-filter .5s ease; */
+}
+
+
+
+.lightbox.closing::before {
+  opacity: 0;                            /* fade the backdrop on close */
+}
+
+.lightbox.closing {
+  opacity: 0;
+  visibility: visible;
+  pointer-events: none;
+  backdrop-filter: blur(0px) grayscale(0);
+  -webkit-backdrop-filter: blur(0px) grayscale(0);
+  transition: opacity .4s ease,
+  backdrop-filter .4s ease .4s, 
+  -webkit-backdrop-filter .4s ease .4s;
+}
+
+.lightbox.open { 
+  opacity: 1;
+  visibility: visible;
+  pointer-events: auto; 
+  backdrop-filter: blur(4px) grayscale(1);
+  -webkit-backdrop-filter: blur(4px) grayscale(1);
+  transition: opacity .5s ease,
+  backdrop-filter .5s ease, 
+  -webkit-backdrop-filter .5s ease;
+}
+.lightbox.open::before {
+  opacity: 1;
+}
+
+
+/* When zoomed, switch to grab */
+.lightbox.is-zoomed .lightbox__img { cursor: grab; }
+
+.lightbox__inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  place-items: center;
+  padding: 2vh 4vw;
+  box-sizing: border-box;
+  overflow: hidden;
+  opacity: 1;
+}
+
+.lightbox__img {
+  max-width: 100%;
+  max-height: 100%;
+  object-fit: contain;
+  box-shadow: 0 30px 60px rgba(0,0,0,.6);
+  opacity: 1;
+  filter: none !important;
+  will-change: transform,;
+  transition: transform .2s ease;
+  object-position: center;
+  margin: auto;
+  transform-origin: 50% 50%;
+  /* transform-origin: 0 0 !important; */
+}
+
+.lightbox__btn {
+  position: absolute;
+  top: 24px;
+  padding: 12px 16px;
+  background: rgba(25,25,25,.9);
+  /* border: 1px solid rgba(255,255,255,.08); */
+  border: none;
+  color: #e8e8e8;
+  text-transform: uppercase;
+  letter-spacing: .06em;  
+  font-weight: 700;
+  cursor: pointer;
+  user-select: none;
+  z-index: 2;
+  background: radial-gradient(92px 130px at top, rgb(0, 0, 0) 0%, rgba(25, 25, 25, 0) 70%), rgba(25, 25, 25, 0%)
+}
+
+.lightbox__close { 
+  z-index: 3;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 8px 60px 10px;
+}
+
+.lightbox__prev,  
+.lightbox__next {
+  top: 50%;
+  transform: translateY(-50%);
+  padding: 18px 20px;
+  font-size: 44px;
+  height: 100%;
+  width: 140px;
+}
+.lightbox__prev { 
+  left: 0; 
+  background: linear-gradient(90deg, 
+    rgba(0, 0, 0, 0.95) 0%, 
+    rgb(0 0 0 / 85%) 20%, 
+    rgba(0, 0, 0, 0.7) 40%, 
+    rgba(0, 0, 0, 0.4) 70%, 
+    rgba(0, 0, 0, 0.0) 100%);
+  border: none;
+}
+
+.lightbox__next { 
+  right: 0px;
+  background: linear-gradient(270deg, 
+    rgba(0, 0, 0, 0.95) 0%, 
+    rgb(0 0 0 / 85%) 20%, 
+    rgba(0, 0, 0, 0.7) 40%, 
+    rgba(0, 0, 0, 0.4) 70%, 
+    rgba(0, 0, 0, 0.0) 100%);
+  border: none;
+}
+
+/* new stuff */
+
+/* end of new stuff */
+
+.lightbox__counter {
+  position: absolute;
+  bottom: 0px;
+  left: 50%;
+  transform: translateX(-50%);
+  color: #cfd8e3;
+  font-family: "Bebas Neue", sans-serif;
+  font-size: 20px;
+  letter-spacing: .08em;
+  background: rgba(20,20,20,.9);
+  border: 1px solid rgba(255,255,255,.08);
+  padding: 10px 80px 5px;
+  z-index: 2;
+  background: radial-gradient(120px 120px at bottom, rgb(0, 0, 0) 0%, rgba(25, 25, 25, 0) 70%), rgba(25, 25, 25, 0%);
+  border: none;
+}
+
+/* Strong hinting for interactivity */
+[data-lightbox] { cursor: zoom-in; }
+
+/* default when open = can zoom in */
+.lightbox.open .lightbox__img { cursor: zoom-in; }
+
+/* when zoomed, show grab */
+.lightbox.is-zoomed .lightbox__img { cursor: grab; }
+
+/* At max zoom (scale > 1), show zoom-out cursor */
+.lightbox.is-zoomed .lightbox__img { cursor: zoom-out; }
+
+/* While dragging at max zoom, show grabbing */
+.lightbox.is-zoomed.is-dragging .lightbox__img { cursor: grabbing; }
+
+/* New */
+/* Default while open: hint you can zoom IN */
+.lightbox.open .lightbox__img { cursor: zoom-in; }
+
+/* When zoomed (but not max): show grab */}
+.lightbox.is-zoomed .lightbox__img { cursor: grab; }
+.lightbox.is-zoomed.is-dragging .lightbox__img { cursor: grabbing; }
+
+/* ONLY at max zoom: show zoom-out (click will zoom out) */
+.lightbox.is-maxzoom .lightbox__img { cursor: zoom-out; }
+/* Dragging still shows grabbing even at max */
+.lightbox.is-maxzoom.is-dragging .lightbox__img { cursor: grabbing; }
+
+/* Keep zoom cursor when clicking but not dragging */
+/* .lightbox__img:active {
+  cursor: zoom-in !important;
+} */
+
+/* When already zoomed all the way in, keep the zoom-out icon */
+.lightbox.is-maxzoom .lightbox__img:active {
+  cursor: zoom-out !important;
+}
+
+/* Only show grabbing while actually dragging (JS adds .is-dragging) */
+.lightbox.is-dragging .lightbox__img {
+  cursor: grabbing !important;
+}
+.lightbox.is-maxzoom.is-dragging .lightbox__img {
+  cursor: grabbing !important;
+}
+
+/* end of full screen gallery viewer */
+
+
+
+
 
 /* mobile media queries */
 
