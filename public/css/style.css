@@ -865,6 +865,7 @@ footer {
       order: 1;
       border-left: none;
     }
+    
 
     @media (max-width: 900px) {
       .topnav {
@@ -895,9 +896,11 @@ footer {
 
       .block .media img {
         aspect-ratio: 16/9;
-        height: auto;
       }
-
+      .block.mirror .info,
+      .block.mirror .media {
+        order: 0;
+      }
     }
     
     @media (max-width: 600px) {
@@ -3589,9 +3592,6 @@ body.gate-hover:not(.hover-ready) :is(
 }
 
 
-/* When zoomed, switch to grab */
-.lightbox.is-zoomed .lightbox__img { cursor: grab; }
-
 .lightbox__inner {
   position: relative;
   width: 100%;
@@ -3699,48 +3699,26 @@ body.gate-hover:not(.hover-ready) :is(
 /* Strong hinting for interactivity */
 [data-lightbox] { cursor: zoom-in; }
 
-/* default when open = can zoom in */
-.lightbox.open .lightbox__img { cursor: zoom-in; }
+/* Default while lightbox is open = can zoom IN */
+.lightbox.open .lightbox__img {
+  cursor: zoom-in;
+}
 
-/* when zoomed, show grab */
-.lightbox.is-zoomed .lightbox__img { cursor: grab; }
-
-/* At max zoom (scale > 1), show zoom-out cursor */
-.lightbox.is-zoomed .lightbox__img { cursor: zoom-out; }
-
-/* While dragging at max zoom, show grabbing */
-.lightbox.is-zoomed.is-dragging .lightbox__img { cursor: grabbing; }
-
-/* New */
-/* Default while open: hint you can zoom IN */
-.lightbox.open .lightbox__img { cursor: zoom-in; }
-
-/* When zoomed (but not max): show grab */}
-.lightbox.is-zoomed .lightbox__img { cursor: grab; }
-.lightbox.is-zoomed.is-dragging .lightbox__img { cursor: grabbing; }
-
-/* ONLY at max zoom: show zoom-out (click will zoom out) */
-.lightbox.is-maxzoom .lightbox__img { cursor: zoom-out; }
-/* Dragging still shows grabbing even at max */
-.lightbox.is-maxzoom.is-dragging .lightbox__img { cursor: grabbing; }
-
-/* Keep zoom cursor when clicking but not dragging */
-/* .lightbox__img:active {
-  cursor: zoom-in !important;
-} */
-
-/* When already zoomed all the way in, keep the zoom-out icon */
+/* When already at max zoom, show zoom-out icon (click will back out) */
+.lightbox.is-maxzoom .lightbox__img {
+  cursor: zoom-out;
+}
 .lightbox.is-maxzoom .lightbox__img:active {
-  cursor: zoom-out !important;
+  cursor: zoom-out; /* keep zoom-out while clicking */
 }
 
-/* Only show grabbing while actually dragging (JS adds .is-dragging) */
-.lightbox.is-dragging .lightbox__img {
-  cursor: grabbing !important;
-}
+/* Only AFTER the drag threshold is passed (JS adds .is-dragging)
+   do we swap to the grab/grabbing hand */
+.lightbox.is-dragging .lightbox__img,
 .lightbox.is-maxzoom.is-dragging .lightbox__img {
   cursor: grabbing !important;
 }
+
 
 /* end of full screen gallery viewer */
 
@@ -3801,15 +3779,18 @@ body.gate-hover:not(.hover-ready) :is(
   }
 
   .btp-block {
-    font-size: 17px;
-    height: 20px;
+    font-size: 17px !important;
+    height: 20px !important;
+  }
+  .adtlPhotos {
+    font-size: 30px !important;
   }
   .btp-block::after {
     animation: btp-belt 40s linear infinite;
   }
   .cta-heading {
     font-size: 22px;
-    padding: 0 20px;
+    padding: 0 0px;
     text-align: left;
   }
   .cta.reveal {
@@ -3981,7 +3962,8 @@ body.gate-hover:not(.hover-ready) :is(
   }
     .block .info-inner h2 {
     height: 100%;
-    font-size: 30px !important;
+    font-size: 26px !important;
+    padding: 6px 12px;
   }
   .info-inner ul {
     font-size: 20px;
@@ -3998,7 +3980,40 @@ body.gate-hover:not(.hover-ready) :is(
   .builds-index .site-header::before {
     display: none;
   }
-
+  .info-inner ul {
+    padding: 20px 20px 20px 30px;
+  }
+  .lightbox__prev, .lightbox__next {
+    width: 40px;
+  }
+  .lightbox_counter {
+    padding: 5px 67px 2px;
+  } 
+  .lightbox_close {
+    padding: 5px 60px 5px;
+  }
+  .cta-ticker .ticker__track {
+    padding: 6px 0;
+  }
+  .ticker {
+    gap: 9px;
+  }
+  .ticker__track {
+    gap: 20px;
+  }
+  .ticker__track .tick {
+    font-size: 12px;
+  }
+  .tick::before, .ticker__track::after {
+    height: 12px;
+    width: 4px;
+    left: -13px;
+  }
+  .cta-ticker .ticker__track::after {
+    height: 12px;
+    width: 4px;
+    margin-left: -13px;
+  }
 
 }
 

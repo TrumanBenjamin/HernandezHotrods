@@ -457,20 +457,20 @@ document.addEventListener('DOMContentLoaded', function () {
       counterEl = lb.querySelector('.lightbox__counter');
 
        // === START of new ZOOM / PAN code ===
-      if (!lb.dataset.zoomBound) {
+if (!lb.dataset.zoomBound) {
   lb.dataset.zoomBound = '1';
 
   // ---- Zoom / Pan state ----
   const MIN_SCALE = 1;
   const MID_SCALE = 2;
   const MAX_SCALE = 4;
+  const STEP = .3;
   const EPS = 0.001;
 
   let scale = MIN_SCALE;
   let tx = 0;
   let ty = 0;
   let prevTransition = "";
-
   const drag = {
     active: false,
     x: 0,
@@ -480,15 +480,30 @@ document.addEventListener('DOMContentLoaded', function () {
     moved: false,
     suppressClick: false,
   };
+  let baseImgWidth = 0;
+  let baseImgHeight = 0;
+  let baseInnerWidth = 0;
+  let baseInnerHeight = 0;
 
   const inner = lb.querySelector('.lightbox__inner');
 
-  function applyTransform() {
-    // scale first, then translate: translation is in screen pixels
-    imgEl.style.transform = `scale(${scale}) translate(${tx}px, ${ty}px)`;
+  function cacheBaseSizes() {
+    if (!inner) return;
+    const ir = inner.getBoundingClientRect();
+    const r = imgEl.getBoundingClientRect();
+    baseInnerWidth = ir.width;
+    baseInnerHeight = ir.height;
+    baseImgWidth = r.width;
+    baseImgHeight = r.height;
   }
 
-  function updateZoomClasses() {
+
+  function applyTransform() {
+    // translate in screen pixels, then scale about the center
+    imgEl.style.transform = `translate(${tx}px, ${ty}px) scale(${scale})`;
+  }
+
+  function setZoomedClass() {
     lb.classList.toggle('is-zoomed', scale > MIN_SCALE + EPS);
     lb.classList.toggle('is-maxzoom', scale >= MAX_SCALE - EPS);
   }
@@ -496,49 +511,39 @@ document.addEventListener('DOMContentLoaded', function () {
   function clampPan() {
     if (!inner) return;
 
-    const ir = inner.getBoundingClientRect();
-    const r = imgEl.getBoundingClientRect();
-
-    // Horizontal clamping
-    if (r.width <= ir.width || Math.abs(scale - MIN_SCALE) < EPS) {
-      // Center horizontally
-      const cxImg = r.left + r.width / 2;
-      const cxInner = ir.left + ir.width / 2;
-      const dx = cxInner - cxImg;
-      tx += dx;
-    } else {
-      // Prevent gaps left/right
-      if (r.left > ir.left) {
-        tx += ir.left - r.left;
-      } else if (r.right < ir.right) {
-        tx += ir.right - r.right;
-      }
+    // At (or very near) 1x, we don’t want to mess with tx/ty; 1x is “identity”.
+    if (Math.abs(scale - MIN_SCALE) < EPS) {
+      tx = 0;
+      ty = 0;
+      return;
     }
 
-    // Vertical clamping
-    if (r.height <= ir.height || Math.abs(scale - MIN_SCALE) < EPS) {
-      // Center vertically
-      const cyImg = r.top + r.height / 2;
-      const cyInner = ir.top + ir.height / 2;
-      const dy = cyInner - cyImg;
-      ty += dy;
-    } else {
-      // Prevent gaps top/bottom
-      if (r.top > ir.top) {
-        ty += ir.top - r.top;
-      } else if (r.bottom < ir.bottom) {
-        ty += ir.bottom - r.bottom;
-      }
+    if (!baseImgWidth || !baseImgHeight || !baseInnerWidth || !baseInnerHeight) {
+      cacheBaseSizes();
+      if (!baseImgWidth || !baseImgHeight) return;
     }
+
+    const scaledW = baseImgWidth * scale;
+    const scaledH = baseImgHeight * scale;
+
+    const maxOffsetX = Math.max(0, (scaledW - baseInnerWidth) / 2);
+    const maxOffsetY = Math.max(0, (scaledH - baseInnerHeight) / 2);
+
+    // Clamp tx, ty so we never drag past the edges
+    if (tx > maxOffsetX) tx = maxOffsetX;
+    if (tx < -maxOffsetX) tx = -maxOffsetX;
+    if (ty > maxOffsetY) ty = maxOffsetY;
+    if (ty < -maxOffsetY) ty = -maxOffsetY;
   }
 
   function resetZoom(animated) {
     scale = MIN_SCALE;
     tx = 0;
     ty = 0;
-    updateZoomClasses();
+    setZoomedClass();
 
     if (animated) {
+      // just animate back to pure identity transform
       applyTransform();
     } else {
       const old = imgEl.style.transition;
@@ -547,79 +552,105 @@ document.addEventListener('DOMContentLoaded', function () {
       void imgEl.offsetWidth; // force reflow
       imgEl.style.transition = old;
     }
+    cacheBaseSizes();
   }
 
-  // Allow show() to reset zoom instantly when switching images
+  // Called from show() when switching images
   lb.resetZoom = () => resetZoom(false);
 
-  function zoomAt(clientX, clientY, targetScale) {
-    let newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, targetScale));
-    const oldScale = scale;
+  // ---- Cursor-anchored zoom ----
+function zoomAt(clientX, clientY, targetScale) {
+  const oldScale = scale;
+  const newScale = Math.max(MIN_SCALE, Math.min(MAX_SCALE, targetScale));
 
-    if (Math.abs(newScale - oldScale) < EPS) return;
+  if (Math.abs(newScale - oldScale) < EPS) return;
 
-    // If we're going back to 1x, always fully reset to original position
-    if (newScale === MIN_SCALE) {
-      resetZoom(true);
-      return;
-    }
+  const zoomingIn = newScale > oldScale;
 
-    // Keep the point under the cursor stable while zooming
-    const ir = inner.getBoundingClientRect();
-    const cx = ir.left + ir.width / 2;
-    const cy = ir.top + ir.height / 2;
-
-    const dx = clientX - cx;
-    const dy = clientY - cy;
-
-    // Derived formula: tx' = tx + dx * (1 - newScale / oldScale)
-    tx = tx + dx * (1 - newScale / oldScale);
-    ty = ty + dy * (1 - newScale / oldScale);
-
-    scale = newScale;
-    clampPan();
-    applyTransform();
-    updateZoomClasses();
+  // If we’re going back to 1x, always reset to original centered position
+  if (newScale === MIN_SCALE) {
+    resetZoom(true);
+    return;
   }
 
-  // ---- Click to zoom: 1x -> MID -> MAX -> 1x, always at click point ----
+  if (!inner) return;
+
+  // Use the lightbox inner container, which never animates
+  const ir = inner.getBoundingClientRect();
+  const centerX = ir.left + ir.width / 2;
+  const centerY = ir.top + ir.height / 2;
+
+  // Cursor position relative to the inner center (screen space)
+  const cx = clientX - centerX;
+  const cy = clientY - centerY;
+
+  // Where is the cursor in image space before scaling?
+  const ix = (cx - tx) / oldScale;
+  const iy = (cy - ty) / oldScale;
+
+  // Choose tx/ty so the same image point stays under the cursor
+  tx = cx - ix * newScale;
+  ty = cy - iy * newScale;
+
+  scale = newScale;
+  applyTransform();
+
+  // Only clamp when zooming OUT so zoom-in feels free at the edges
+  if (!zoomingIn) {
+    clampPan();
+    applyTransform();
+  }
+
+  setZoomedClass();
+}
+
+  // ---- Click zoom: 1x -> mid -> max -> 1x, anchored at click point ----
   imgEl.addEventListener('click', (e) => {
     if (drag.suppressClick) {
       drag.suppressClick = false;
       return;
     }
 
-    let target;
+    let next;
     if (scale < MID_SCALE - EPS) {
-      target = MID_SCALE;
+      next = MID_SCALE;
     } else if (scale < MAX_SCALE - EPS) {
-      target = MAX_SCALE;
+      next = MAX_SCALE;
     } else {
-      target = MIN_SCALE;
+      next = MIN_SCALE;
     }
 
-    zoomAt(e.clientX, e.clientY, target);
+    zoomAt(e.clientX, e.clientY, next);
   });
 
   // ---- Wheel zoom around cursor ----
-  let wheelRAF = null;
+  let wheelRAF = null, wheelLast = null;
+
   imgEl.addEventListener('wheel', (e) => {
     e.preventDefault();
 
-    const clientX = e.clientX;
-    const clientY = e.clientY;
-    const delta = -e.deltaY; // up = zoom in
+    // remember the latest wheel event for this animation frame
+    wheelLast = e;
+    if (wheelRAF) return;
 
-    let factor = delta > 0 ? 1.2 : 1 / 1.2;
-    let target = scale * factor;
-
-    if (target < MIN_SCALE + 0.01) target = MIN_SCALE;
-    if (target > MAX_SCALE) target = MAX_SCALE;
-
-    if (wheelRAF) cancelAnimationFrame(wheelRAF);
     wheelRAF = requestAnimationFrame(() => {
+      const ev = wheelLast;
+      wheelLast = null;
       wheelRAF = null;
-      zoomAt(clientX, clientY, target);
+      if (!ev) return;
+
+    // use STEP as a relative change to the current scale
+    const direction = ev.deltaY > 0 ? -1 : 1; // down = zoom out, up = zoom in
+    const targetScale = scale * (1 + direction * STEP);
+
+
+    // use the same cursor-anchored zoom logic as clicks, but with the new target scale
+    zoomAt(ev.clientX, ev.clientY, targetScale);
+
+      // on the next frame, restore the transition so click-zooms still ease
+      requestAnimationFrame(() => {
+        imgEl.style.transition = prevTransition || '';
+      });
     });
   }, { passive: false });
 
@@ -638,7 +669,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
     prevTransition = imgEl.style.transition;
     imgEl.style.transition = 'none';
-    imgEl.style.cursor = 'grabbing';
+    // lb.classList.add('is-dragging');
   });
 
   window.addEventListener('mousemove', (e) => {
@@ -649,12 +680,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
     if (!drag.moved && (Math.abs(dx) > 3 || Math.abs(dy) > 3)) {
       drag.moved = true;
+      lb.classList.add('is-dragging'); // 👈 grabby hand starts here
     }
 
     if (!drag.moved) return;
 
     tx = drag.startTx + dx;
     ty = drag.startTy + dy;
+
+    applyTransform();
     clampPan();
     applyTransform();
   });
@@ -663,7 +697,7 @@ document.addEventListener('DOMContentLoaded', function () {
     if (!drag.active) return;
 
     drag.active = false;
-    imgEl.style.cursor = scale > MIN_SCALE + EPS ? 'grab' : 'zoom-in';
+    lb.classList.remove('is-dragging');
 
     if (drag.moved) {
       drag.suppressClick = true;
@@ -675,9 +709,10 @@ document.addEventListener('DOMContentLoaded', function () {
 
     clampPan();
     applyTransform();
+    setZoomedClass();
   });
 
-  // Make sure current image is at 1x, centered, when the lightbox is first opened
+  // Start every image at centered 1x
   resetZoom(false);
 }
 
