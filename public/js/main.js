@@ -5,7 +5,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
   // Global page reveal (DOM + <img> + CSS bg images, with timeout + min delay, bfcache-safe)
-(function () {
+  (function () {
   const docEl = document.documentElement;
 
   function collectWaiters() {
@@ -886,6 +886,163 @@ function zoomAt(clientX, clientY, targetScale) {
       openFrom(e.target);
     });
   })();
+
+  // Instagram video hover: play/pause on card hover
+  (function () {
+    const videoCards = document.querySelectorAll('.social-card--video video');
+    if (!videoCards.length) return;
+
+    videoCards.forEach(video => {
+      const card = video.closest('.social-card--video');
+      if (!card) return;
+
+      const play = () => {
+        video.currentTime = 0;
+        const p = video.play();
+        if (p && typeof p.catch === 'function') {
+          p.catch(() => {}); // ignore autoplay block errors
+        }
+      };
+
+      const stop = () => {
+        video.pause();
+        video.currentTime = 0;
+      };
+
+      card.addEventListener('mouseenter', play);
+      card.addEventListener('mouseleave', stop);
+      card.addEventListener('focusin', play);
+      card.addEventListener('focusout', stop);
+    });
+  })();
+
+  // --- Instagram card active state + dim siblings ---
+  (function () {
+    const grid = document.querySelector('.social-grid');
+    if (!grid) return;
+
+    const cards = grid.querySelectorAll('.social-card');
+    if (!cards.length) return;
+
+    let activeCard = null;
+
+    function clearActive() {
+      grid.classList.remove('social-grid--hovering');
+      if (activeCard) {
+        activeCard.classList.remove('is-active');
+        activeCard = null;
+      }
+    }
+
+    function setActive(card) {
+      if (activeCard === card) return;
+      if (activeCard) activeCard.classList.remove('is-active');
+      activeCard = card;
+      if (activeCard) activeCard.classList.add('is-active');
+    }
+
+    cards.forEach(card => {
+      card.addEventListener('mouseenter', () => {
+        grid.classList.add('social-grid--hovering');
+        setActive(card);
+      });
+
+      card.addEventListener('focusin', () => {
+        grid.classList.add('social-grid--hovering');
+        setActive(card); 
+      });
+
+      // When you press on the card (before navigation), clear active state
+      card.addEventListener('mousedown', () => {
+        clearActive();
+      });
+    });
+
+
+    // When mouse leaves the whole grid, clear everything
+    grid.addEventListener('mouseleave', clearActive);
+
+    // Keyboard / focus leave
+    grid.addEventListener('focusout', () => {
+      if (!grid.contains(document.activeElement)) {
+        clearActive();
+      }
+    });
+
+    // If the tab/window loses focus or is hidden, reset the grid state
+    window.addEventListener('blur', clearActive);
+    window.addEventListener('pagehide', clearActive);
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'hidden') {
+        clearActive();
+      }
+    });
+
+
+  })();
+
+
+
+  // --- Instagram background subtle spin on scroll ---
+  (function () {
+    const feed = document.querySelector('.social-feed'); // or .social-feed__inner if that's where bg lives
+    if (!feed) return;
+
+    const baseAngle = 180;   // starting angle
+    const maxDelta = 20;      // +/- degrees from base (smaller = more subtle)
+
+    // Thresholds as fractions of viewport height (top/bottom band)
+    const topThresholdRatio = 0.15;    // 15% from top
+    const bottomThresholdRatio = 0.15; // 15% from bottom
+
+    let ticking = false;
+
+    function updateAngle() {
+      ticking = false;
+
+      const rect = feed.getBoundingClientRect();
+      const vh = window.innerHeight || document.documentElement.clientHeight;
+
+      // If it's completely offscreen, don't update; keep last angle
+      if (rect.bottom <= 0 || rect.top >= vh) return;
+
+      const topLimit = vh * topThresholdRatio;
+      const bottomLimit = vh * (1 - bottomThresholdRatio);
+
+      // Center of the feed relative to viewport
+      const centerY = rect.top + rect.height / 2;
+
+      // Normalize position within the band: 0 at topLimit, 1 at bottomLimit
+      let t = (centerY - topLimit) / (bottomLimit - topLimit);
+
+      // Clamp to [0, 1] so it doesn't jump outside the band
+      if (t < 0) t = 0;
+      else if (t > 1) t = 1;
+
+      // Map 0–1 → -maxDelta…+maxDelta around baseAngle
+      const delta = (t - 0.5) * 2 * maxDelta;
+      const angle = baseAngle + delta;
+
+      feed.style.setProperty('--ig-angle', angle + 'deg');
+    }
+
+    function onScrollOrResize() {
+      if (!ticking) {
+        ticking = true;
+        requestAnimationFrame(updateAngle);
+      }
+    }
+
+    window.addEventListener('scroll', onScrollOrResize, { passive: true });
+    window.addEventListener('resize', onScrollOrResize);
+
+    updateAngle(); // initial set
+  })();
+
+
+  
+
 
 
 

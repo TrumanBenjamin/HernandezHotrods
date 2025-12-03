@@ -56,14 +56,54 @@
   <section class="social-feed" aria-label="Instagram feed" data-animate>
     <div class="social-inner"> 
       <header class="social-head"> 
-        <h2 class="social-title">Latest on Instagram</h2>
-        <a class="social-link btn-cta" href="https://www.instagram.com/hernandezhotrods/" target="_blank" rel="noopener">Follow us</a>
+        <h2 class="social-title">Check out <br>our Instagram</h2>
+        <a class="btn btn-cta" href="https://www.instagram.com/hernandezhotrods/" target="_blank" rel="noopener"><span>Follow us</span></a>
       </header>
 
       <div class="social-grid">
-        <% (igPosts || []).forEach(p => { %>
-          <a class="social-card" href="<%= p.permalink %>" target="_blank" rel="noopener" aria-label="Open Instagram post">
-            <img src="<%= p.image %>" alt="<%= p.caption ? p.caption.replace(/\s+/g,' ').slice(0,120) : 'Instagram image' %>">
+        <% (igPosts || []).forEach(p => { 
+            let fullCap = (p.caption || '').replace(/\s+/g, ' ').trim();
+
+            const maxChars = 260; // tweak if you want more/less text
+
+            if (fullCap.length > maxChars) {
+              const cutAt = fullCap.lastIndexOf(' ', maxChars);
+              fullCap = fullCap.slice(0, cutAt > 0 ? cutAt : maxChars).trim() + '…';
+            }
+
+            const captionSafe = fullCap;
+        %>
+          <a
+            class="social-card <%= p.mediaType === 'VIDEO' ? 'social-card--video' : '' %>"
+            href="<%= p.permalink %>"
+            target="_blank"
+            rel="noopener"
+            aria-label="<%= captionSafe || 'Open Instagram post' %>"
+          >
+            <% if (p.mediaType === 'VIDEO' && p.videoUrl) { %>
+              <video
+                class="social-card-media"
+                preload="metadata"
+                muted
+                playsinline
+                poster="<%= p.image %>"
+              >
+                <source src="<%= p.videoUrl %>" type="video/mp4" />
+              </video>
+            <% } else { %>
+              <img
+                class="social-card-media"
+                src="<%= p.image %>"
+                alt="<%= captionSafe || 'Instagram image' %>"
+              />
+            <% } %>
+
+            <div class="social-card-overlay">
+              <p class="social-caption">
+                <%= captionSafe || 'View on Instagram' %>
+              </p>
+              
+            </div>
           </a>
         <% }) %>
 

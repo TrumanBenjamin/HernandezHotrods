@@ -2,7 +2,7 @@
 const TTL = Number(process.env.IG_CACHE_TTL_SECONDS || 600); // 10 min
 let cache = { data: null, ts: 0 };
 
-async function fetchInstagramPosts(limit = 4) {
+async function fetchInstagramPosts(limit = 3) {
   const now = Date.now();
   if (cache.data && now - cache.ts < TTL * 1000) return cache.data;
 
@@ -21,7 +21,7 @@ async function fetchInstagramPosts(limit = 4) {
     'username'
   ].join(',');
 
-  const url = new URL('https://graph.instagram.com/me/media');
+  const url = new URL(`https://graph.facebook.com/v24.0/${process.env.IG_USER_ID}/media`);
   url.searchParams.set('fields', fields);
   url.searchParams.set('limit', String(limit));
   url.searchParams.set('access_token', token);
@@ -40,6 +40,7 @@ async function fetchInstagramPosts(limit = 4) {
     permalink: p.permalink,
     mediaType: p.media_type,
     image: p.media_type === 'VIDEO' ? (p.thumbnail_url || p.media_url) : p.media_url,
+    videoUrl: p.media_type === 'VIDEO' ? p.media_url : null,
     timestamp: p.timestamp
   }));
 

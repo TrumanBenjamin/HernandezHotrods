@@ -2457,14 +2457,37 @@ body.is-home .nav-logo.visible {
 /* social media links */
 .social-feed{
   position: relative;
-  padding: 24px 0 32px;
-  background: #000000cc;
+  padding: 24px 0 60px;
+  --ig-angle: 135deg;
+  background: linear-gradient(
+    var(--ig-angle),
+    rgba(43, 18, 77, 0.6) 0%,
+    rgba(90, 16, 85, 0.6) 25%,
+    rgba(138, 22, 66, 0.6) 50%,
+    rgba(168, 67, 47, 0.6) 70%,
+    rgba(194, 122, 41, 0.6) 100%
+  );
   min-height: 500px;
-  /* full-bleed */
+  opacity: .9 !important;
 }
 
+/* .social-feed::before {
+  content: "";
+  position: absolute;
+  inset: -20%;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 70, 101, 0.28),
+    rgba(255, 140, 0, 0.22)
+  );
+  filter: blur(60px);
+  opacity: 0.6;
+  pointer-events: none;
+} */
+
+
 .social-inner{
-  width: min(1240px, 92vw);
+  width: min(1500px, 93vw);
   margin: 0 auto;
 }
 
@@ -2473,16 +2496,35 @@ body.is-home .nav-logo.visible {
   justify-content: space-between;
   align-items: baseline;
   gap: 16px;
-  margin-bottom: 12px;
+  margin-bottom: 20px;
+  margin-right: 40px;
+  margin-left: 40px;
+}
+
+.is-home .btn {
+  border-radius: 5px;
+  margin: auto 0;
 }
 
 .social-title{
   font-family: "Bebas Neue", sans-serif;
-  font-size: clamp(28px, 5vw, 40px);
+  font-size: clamp(28px, 5vw, 45px);
   letter-spacing: .06em;
   color: #c7c7c7;
   margin: 0;
   text-transform: uppercase;  
+}
+
+.social-title::after {
+  content: "";
+  position: absolute;
+  left: 315px;
+  /* bottom: 0; */
+  width: 874px;
+  height: 3px;
+  border-radius: 999px;
+  background: linear-gradient(90deg, #f77737, #e1306c, #833ab4);
+  box-shadow: 0 0 12px rgba(225, 48, 108, 0.6);
 }
 
 .social-link{
@@ -2492,21 +2534,41 @@ body.is-home .nav-logo.visible {
 
 .social-grid{
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 12px;
+  height: 500px;
 }
 
 .social-card{
   position: relative;
   display: block;
-  aspect-ratio: 1 / 1;
+  height: 100%;
+  width: 100%;
+  aspect-ratio: 3/4;
   overflow: hidden;
   border: 1px solid #141414;
   box-shadow:
     0 16px 40px rgba(0,0,0,.35),
     inset 0 1px 0 rgba(255,255,255,.03);
   background: #0b0d10;
+  border-radius: 5px;
+  z-index: 0;
+  transition: transform .2s ease, border-radius .2s ease, box-shadow .2s ease;
 }
+
+.social-card.is-active {
+  transform: scale(1.1);
+  border-radius: 10px;
+  z-index: 2;
+  box-shadow:
+    0 22px 60px rgba(0,0,0,.6),
+    inset 0 1px 0 rgba(255,255,255,.04);
+}
+/* .social-card:hover {
+  transform: scale(1.1);
+  border-radius: 10px;
+  z-index: 2;
+} */
 
 .social-card img{
   width: 100%;
@@ -2517,9 +2579,85 @@ body.is-home .nav-logo.visible {
   transition: transform .35s ease;
 }
 
-.social-card:hover img{
-  transform: scale(1.04);
+
+.social-card-overlay{
+  position: absolute;
+  inset: 0;
+  padding: 12px 12px 10px;
+  display: flex;
+  flex-direction: column;
+  justify-content: flex-end;
+  background: linear-gradient(to top, rgba(0,0,0,0.95) 0%, rgba(0,0,0,0.05) 30%);
+  opacity: 0;
+  transform: translateY(20%);
+  transition: opacity .25s ease-out, transform .25s ease-out;
+  pointer-events: none;
 }
+
+.social-card.is-active .social-card-overlay {
+  transform: translateY(0%);
+  opacity: 1;
+  scale: 1;
+  margin-bottom: -1px;
+}
+
+/* .social-card:hover .social-card-overlay,
+.social-card:focus-visible .social-card-overlay{
+  opacity: 1;
+  scale: 1;
+  transform: translateY(0%);
+  margin-bottom: -1px;
+} */
+
+.social-card-media {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+  filter: none;
+  opacity: 1;
+  transition: filter .25s ease, opacity .25s ease;
+}
+
+.social-grid--hovering .social-card:not(.is-active) .social-card-media {
+  filter: grayscale(0.4);
+  opacity: 0.5;
+}
+
+.social-caption{
+  font-size: 1rem;
+  line-height: 1.3;
+  color: #f7f7f7;
+  max-height: 5.2em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  margin-bottom: 0;
+}
+
+
+.social-meta{
+  display: flex;
+  gap: 12px;
+  margin-top: 8px;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #f7f7f7cc;
+}
+
+.social-meta-item{
+  display: inline-flex;
+  align-items: center;
+}
+
+.social-meta-icon{
+  width: 14px;
+  height: 14px;
+  margin-right: 4px;
+  fill: currentColor;
+  flex-shrink: 0;
+}
+
 
 .social-empty{
   color: #aab4c3;
