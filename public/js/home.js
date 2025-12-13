@@ -41,7 +41,8 @@
     { threshold: 0 } // flip as soon as hero leaves
   );
 
-  io.observe(hero);
+  const spacerEl = document.querySelector('.home-hero-spacer');
+  io.observe(spacerEl || hero);
 
   // Set correct state on load without waiting for scroll
   window.addEventListener('load', () => {
@@ -76,60 +77,77 @@
 
 
 
+
+
   // --- Sync existing hero logo transition to a timestamp in the hero video (fire ONCE) ---
-(function syncHeroLogoToVideo() {
-  const video = document.getElementById('homeHeroVideo');
-  const logo  = document.querySelector('.home-hero .hero-logo');
-  if (!video || !logo) return;
+  (function syncHeroLogoToVideo() {
+    const video = document.getElementById('homeHeroVideo');
+    const logo  = document.querySelector('.home-hero .hero-logo');
+    if (!video || !logo) return;
 
-  const CUE_TIME = 1.6;   // seconds
-  const TOL = 0.03;
+    // NEW: if the hero is already scrolled past when the page loads,
+    // just show the logo immediately and skip the timing logic.
+    const heroSection = document.querySelector('.home-hero');
+    if (heroSection) {
+      const rect = heroSection.getBoundingClientRect();
+      const heroIsAboveViewport = rect.bottom <= 0; // completely above screen
 
-  let done = false;        // ← when true, never fire again
-  let rafBound = null;     // keep a handle to rVFC callback for cleanup
-
-  const fire = () => {
-    if (done) return;
-    done = true;
-    logo.classList.add('start');          // uses your existing CSS (opacity/translate)
-    // stop all listeners so loops won't retrigger
-    video.removeEventListener('timeupdate', onTimeUpdate);
-    video.removeEventListener('play', onPlay);
-    video.removeEventListener('loadedmetadata', onLoadedMeta);
-    // no more rVFC scheduling once done
-  };
-
-  const check = (t) => {
-    if (!done && t + TOL >= CUE_TIME) fire();
-  };
-
-  const onFrame = (_now, meta) => {
-    if (done) return; // stop scheduling frames once fired
-    check(meta.mediaTime);
-    if (!done && !video.paused) video.requestVideoFrameCallback(rafBound);
-  };
-
-  const onTimeUpdate = () => check(video.currentTime);
-  const onLoadedMeta = () => { /* no reset; we only want to fire once */ };
-  const onPlay = () => {
-    if (done) return;
-    // If user scrubbed past the cue before play, fire immediately
-    if (video.currentTime >= CUE_TIME - TOL) fire();
-    else if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
-      rafBound = onFrame;
-      video.requestVideoFrameCallback(rafBound);
+      if (heroIsAboveViewport) {
+        logo.classList.add('start');   // show it right away
+        return;                        // don’t hook any video listeners
+      }
     }
-  };
 
-  // Wire up listeners (one-time behavior)
-  video.addEventListener('loadedmetadata', onLoadedMeta);
-  video.addEventListener('play', onPlay);
+    const CUE_TIME = 1.6;   // seconds
+    const TOL = 0.03;
 
-  if (!('requestVideoFrameCallback' in HTMLVideoElement.prototype)) {
-    // fallback path if rVFC not supported
-    video.addEventListener('timeupdate', onTimeUpdate);
-  }
-})();
+    let done = false;
+    let rafBound = null;
+
+    const fire = () => {
+      if (done) return;
+      done = true;
+      logo.classList.add('start');
+
+      video.removeEventListener('timeupdate', onTimeUpdate);
+      video.removeEventListener('play', onPlay);
+      video.removeEventListener('loadedmetadata', onLoadedMeta);
+    };
+
+    const check = (t) => {
+      if (!done && t + TOL >= CUE_TIME) fire();
+    };
+
+    const onFrame = (_now, meta) => {
+      if (done) return;
+      check(meta.mediaTime);
+      if (!done && !video.paused) video.requestVideoFrameCallback(rafBound);
+    };
+
+    const onTimeUpdate = () => check(video.currentTime);
+    const onLoadedMeta = () => { /* no-op, we only fire once */ };
+
+    const onPlay = () => {
+      if (done) return;
+
+      // If user scrubbed past the cue before play, fire immediately
+      if (video.currentTime >= CUE_TIME - TOL) {
+        fire();
+      } else if ('requestVideoFrameCallback' in HTMLVideoElement.prototype) {
+        rafBound = onFrame;
+        video.requestVideoFrameCallback(rafBound);
+      }
+    };
+
+    // Wire up listeners (one-time)
+    video.addEventListener('loadedmetadata', onLoadedMeta);
+    video.addEventListener('play', onPlay);
+
+    if (!('requestVideoFrameCallback' in HTMLVideoElement.prototype)) {
+      video.addEventListener('timeupdate', onTimeUpdate);
+    }
+  })();
+
 
 
 

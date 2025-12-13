@@ -1,0 +1,25 @@
+<main class="admin-page">
+  <h1>Refresh Instagram Token</h1>
+
+  <p>
+    This will call the Instagram Graph API and return a new long-lived access
+    token based on the one currently stored on the server.
+  </p>
+
+  <form method="POST" action="/admin/refresh-ig-token">
+    <button type="submit" class="btn btn-cta">
+      <span>Refresh Token</span>
+    </button>
+  </form>
+
+  <% if (newToken) { %>
+    <section class="admin-token-result">
+      <h2>New Token</h2>
+      <p><strong>Expires in:</strong> <%= expiresInDays %> days</p>
+      <pre><%= newToken %></pre>
+      <p class="note">
+        Copy this into your environment (IG_LONG_LIVED_TOKEN) and restart the server.
+      </p>
+    </section>
+  <% } %>
+</main>

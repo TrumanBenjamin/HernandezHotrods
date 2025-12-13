@@ -7,6 +7,11 @@
     </form>
   </header>
 
+  <!-- IG Token Quick Link -->
+  <div class="admin-quick-links">
+    <a href="/admin/ig-token" class="btn-ig-token"> <span>Manage Instagram Access Token</span></a>
+  </div>
+
   <!-- Optional success/error flash area -->
   <% if (typeof flash !== 'undefined') { %>
     <div class="admin-flash">
@@ -142,52 +147,117 @@
           <!-- ---------- SPEC SECTIONS ---------- -->
           <fieldset class="specs">
             <legend>Engine &amp; Drivetrain</legend>
-            <div class="spec-list" data-section="engine">
-              <!-- one input present by default -->
-              <div class="spec-row">
-                <input name="sections[engine][]" placeholder="e.g., 6.2L LS with mild cam & headers" required>
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <div class="spec-list" data-section="engine">
+                  <!-- one input present by default -->
+                  <div class="spec-row">
+                    <input name="sections[engine][]" placeholder="e.g., 6.2L LS with mild cam & headers" required>
+                    <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-outline spec-add" data-target="engine">
+                  + Add bullet
+                </button>
               </div>
+
+              <label class="section-image">
+                <span>Section image: Engine &amp; Drivetrain</span>
+                <input type="file" name="image_engine" accept="image/*" required>
+              </label>
             </div>
-            <button type="button" class="btn-outline spec-add" data-target="engine">+ Add bullet</button>
-            <label class="section-image">
-              <span>Section Image: Engine &amp; Drivetrain</span>
-              <input type="file" name="image_engine" accept="image/*" required>
-            </label>
           </fieldset>
 
           <fieldset class="specs">
             <legend>Chassis &amp; Suspension</legend>
-            <div class="spec-list" data-section="chassis">
-              <div class="spec-row">
-                <input name="sections[chassis][]" placeholder="e.g., Coilovers w/ adjustable damping" required>
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <div class="spec-list" data-section="chassis">
+                  <!-- default bullet row(s) -->
+                  <div class="spec-row">
+                    <input
+                      name="sections[chassis][]"
+                      placeholder="e.g., Coilovers w/ adjustable damping"
+                    >
+                    <button type="button" class="spec-remove" aria-label="Remove item">
+                      &times;
+                    </button>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-outline spec-add" data-target="chassis">
+                  + Add bullet
+                </button>
               </div>
+
+              <label class="section-image">
+                <span>Section image: Chassis &amp; Suspension</span>
+                <input type="file" name="image_chassis" accept="image/*">
+              </label>
             </div>
-            <button type="button" class="btn-outline spec-add" data-target="chassis">+ Add bullet</button>
           </fieldset>
 
           <fieldset class="specs">
             <legend>Interior &amp; Electronics</legend>
-            <div class="spec-list" data-section="interior">
-              <div class="spec-row">
-                <input name="sections[interior][]" placeholder="e.g., Digital dash cluster">
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <div class="spec-list" data-section="interior">
+                  <div class="spec-row">
+                    <input
+                      name="sections[interior][]"
+                      placeholder="e.g., Digital dash cluster"
+                    >
+                    <button type="button" class="spec-remove" aria-label="Remove item">
+                      &times;
+                    </button>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-outline spec-add" data-target="interior">
+                  + Add bullet
+                </button>
               </div>
+
+              <label class="section-image">
+                <span>Section image: Interior &amp; Electronics</span>
+                <input type="file" name="image_interior" accept="image/*">
+              </label>
             </div>
-            <button type="button" class="btn-outline spec-add" data-target="interior">+ Add bullet</button>
           </fieldset>
 
           <fieldset class="specs">
             <legend>Body &amp; Paint</legend>
-            <div class="spec-list" data-section="body">
-              <div class="spec-row">
-                <input name="sections[body][]" placeholder="e.g., Graphite grey, satin stripes">
-                <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <div class="spec-list" data-section="body">
+                  <div class="spec-row">
+                    <input
+                      name="sections[body][]"
+                      placeholder="e.g., Graphite grey, satin stripes"
+                    >
+                    <button type="button" class="spec-remove" aria-label="Remove item">
+                      &times;
+                    </button>
+                  </div>
+                </div>
+
+                <button type="button" class="btn-outline spec-add" data-target="body">
+                  + Add bullet
+                </button>
               </div>
+
+              <label class="section-image">
+                <span>Section image: Body &amp; Paint</span>
+                <input type="file" name="image_body" accept="image/*">
+              </label>
             </div>
-            <button type="button" class="btn-outline spec-add" data-target="body">+ Add bullet</button>
           </fieldset>
+
 
           <!-- ---------- IMAGE SLOTS (single each) ---------- -->
           <div class="grid">
@@ -199,26 +269,8 @@
             </label>
           </div>
 
-          <div class="grid">
-            <label>Section Image: Engine &amp; Drivetrain
-              <input type="file" name="image_engine" accept="image/*" required>
-            </label>
-            <label>Section Image: Chassis &amp; Suspension
-              <input type="file" name="image_chassis" accept="image/*" required>
-            </label>
-          </div>
-
-          <div class="grid">
-            <label>Section Image: Interior &amp; Electronics
-              <input type="file" name="image_interior" accept="image/*" required>
-            </label>
-            <label>Section Image: Body &amp; Paint
-              <input type="file" name="image_body" accept="image/*" required>
-            </label>
-          </div>
-
           <!-- ---------- EXTRA PHOTOS (like current) ---------- -->
-          <label>Additional Photos (optional, 50–100+)
+          <label class="additional-photos">Additional Photos (optional, 50–100+)
             <input type="file" name="photos" accept="image/*" multiple>
           </label>
 
@@ -251,27 +303,97 @@
           <!-- ---------- SPEC SECTIONS (append-only here) ---------- -->
           <fieldset class="specs">
             <legend>Engine &amp; Drivetrain — bullets</legend>
-            <div class="spec-list" data-section="engine"></div>
-            <button type="button" class="btn-outline spec-add" data-target="engine">+ Add bullet</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <!-- IMPORTANT: data-section="engine" -->
+                <div class="spec-list" data-section="engine"></div>
+
+                <!-- IMPORTANT: data-target="engine" -->
+                <button
+                  type="button"
+                  class="btn-outline spec-add"
+                  data-target="engine"
+                >
+                  + Add bullet
+                </button>
+              </div>
+
+              <label class="section-image">
+                <span>Section image: Engine &amp; Drivetrain (leave blank for no change)</span>
+                <input type="file" name="image_engine" accept="image/*">
+              </label>
+            </div>
           </fieldset>
 
           <fieldset class="specs">
             <legend>Chassis &amp; Suspension — bullets</legend>
-            <div class="spec-list" data-section="chassis"></div>
-            <button type="button" class="btn-outline spec-add" data-target="chassis">+ Add bullet</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <div class="spec-list" data-section="chassis"></div>
+                <button
+                  type="button"
+                  class="btn-outline spec-add"
+                  data-target="chassis"
+                >
+                  + Add bullet
+                </button>
+              </div>
+
+              <label class="section-image">
+                <span>Section image: Chassis &amp; Suspension (leave blank for no change)</span>
+                <input type="file" name="image_chassis" accept="image/*">
+              </label>
+            </div>
           </fieldset>
+
 
           <fieldset class="specs">
             <legend>Interior &amp; Electronics — bullets</legend>
-            <div class="spec-list" data-section="interior"></div>
-            <button type="button" class="btn-outline spec-add" data-target="interior">+ Add bullet</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <div class="spec-list" data-section="interior"></div>
+                <button
+                  type="button"
+                  class="btn-outline spec-add"
+                  data-target="interior"
+                >
+                  + Add bullet
+                </button>
+              </div>
+
+              <label class="section-image">
+                <span>Section image: Interior &amp; Electronics (leave blank for no change)</span>
+                <input type="file" name="image_interior" accept="image/*">
+              </label>
+            </div>
           </fieldset>
+
 
           <fieldset class="specs">
             <legend>Body &amp; Paint — bullets</legend>
-            <div class="spec-list" data-section="body"></div>
-            <button type="button" class="btn-outline spec-add" data-target="body">+ Add bullet</button>
+
+            <div class="spec-grid">
+              <div class="spec-left">
+                <div class="spec-list" data-section="body"></div>
+                <button
+                  type="button"
+                  class="btn-outline spec-add"
+                  data-target="body"
+                >
+                  + Add bullet
+                </button>
+              </div>
+
+              <label class="section-image">
+                <span>Section image: Body &amp; Paint (leave blank for no change)</span>
+                <input type="file" name="image_body" accept="image/*">
+              </label>
+            </div>
           </fieldset>
+
 
           <!-- ---------- OPTIONAL REPLACEMENTS FOR FIXED IMAGES ---------- -->
           <div class="grid">
@@ -283,26 +405,8 @@
             </label>
           </div>
 
-          <div class="grid">
-            <label>Replace Engine &amp; Drivetrain
-              <input type="file" name="image_engine" accept="image/*">
-            </label>
-            <label>Replace Chassis &amp; Suspension
-              <input type="file" name="image_chassis" accept="image/*">
-            </label>
-          </div>
-
-          <div class="grid">
-            <label>Replace Interior &amp; Electronics
-              <input type="file" name="image_interior" accept="image/*">
-            </label>
-            <label>Replace Body &amp; Paint
-              <input type="file" name="image_body" accept="image/*">
-            </label>
-          </div>
-
           <!-- ---------- EXTRA PHOTOS (5.jpg+) ---------- -->
-          <label>Add More Photos (optional, 50-100+)
+          <label class="additional-photos">Add More Photos (optional, 50-100+)
             <input type="file" name="photos" accept="image/*" multiple>
           </label>
 

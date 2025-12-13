@@ -2,12 +2,27 @@
 const TTL = Number(process.env.IG_CACHE_TTL_SECONDS || 600); // 10 min
 let cache = { data: null, ts: 0 };
 
+const pool = require('../db');
+
+async function getCurrentIgToken() {
+  const { rows } = await pool.query(
+    `SELECT access_token, expires_at
+     FROM ig_tokens
+     ORDER BY created_at DESC
+     LIMIT 1`
+  );
+  return rows[0] || null;
+}
+
 async function fetchInstagramPosts(limit = 3) {
   const now = Date.now();
   if (cache.data && now - cache.ts < TTL * 1000) return cache.data;
 
-  const token = process.env.IG_ACCESS_TOKEN;
-  if (!token) throw new Error('Missing IG_ACCESS_TOKEN');
+  const current = await getCurrentIgToken();
+    if (!current) {
+      console.warn('No IG token found in database.');
+    }
+    const token = current.access_token;
 
   // Basic Display API: /me/media (token authorizes the user)
   const fields = [

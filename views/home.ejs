@@ -1,6 +1,6 @@
 <main>
   <!-- Home: Video Hero -->
-  <section class="home-hero" aria-label="Hero video with logo">
+  <section class="hero home-hero" aria-label="Hero video with logo">
     <div class="hero-top">
       <video id="homeHeroVideo" class="hero-video" autoplay muted loop playsinline preload="metadata">
         <source src="/media/chevelle.mp4" type="video/mp4" />
@@ -9,9 +9,18 @@
 
       <!-- Centered logo inside the 80vh area -->
       <div class="hero-overlay">
-        <img id="heroLogoBox" class="hero-logo" src="/images/logo/hhrlogot.png" alt="Hernandez Hot Rods & Customs" />
+        <img
+          id="heroLogoBox"
+          class="hero-logo"
+          src="/images/logo/hhrlogot.png"
+          alt="Hernandez Hot Rods & Customs"
+        />
       </div>
     </div>
+  </section>
+
+  <!-- Spacer so content scrolls over the fixed hero, like the build pages -->
+  <div class="home-hero-spacer"></div>
 
     <div class="btp">
       <img src="/images/logo/builttoperform.png" alt="">
@@ -21,7 +30,7 @@
 
   <div class="btp-block"><span></span></div> 
   <!-- Band A: color left, info left -->
-  <section class="band band--left band--first" data-animate>
+  <section class="band band--left band--first">
     <div class="band-inner">
       <div class="band-info">
         <h2 class="band-title">About Us</h2>
@@ -36,8 +45,8 @@
   </section>
 
   <!-- Band B: color right, info right -->
-  <section class="band band--right" data-animate>
-    <div class="band-inner">
+  <section class="band band--right">
+    <div class="band-inner" data-animate>
       <div class="band-media">
         <div class="band-media-inner">
           <img src="/images/team.jpg" alt="Team" />
@@ -57,10 +66,11 @@
     <div class="social-inner"> 
       <header class="social-head"> 
         <h2 class="social-title">Check out <br>our Instagram</h2>
+        <div class="social-header-bar"></div>
         <a class="btn btn-cta" href="https://www.instagram.com/hernandezhotrods/" target="_blank" rel="noopener"><span>Follow us</span></a>
       </header>
 
-      <div class="social-grid">
+      <div class="social-grid" data-animate>
         <% (igPosts || []).forEach(p => { 
             let fullCap = (p.caption || '').replace(/\s+/g, ' ').trim();
 

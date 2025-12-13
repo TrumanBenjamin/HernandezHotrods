@@ -234,7 +234,7 @@ document.addEventListener('DOMContentLoaded', function () {
 
 
 
-  // ────── Hero Spacer + Fade ──────
+  // ────── Builds Hero Spacer + Fade ──────
   const spacer = document.querySelector('.hero-spacer');
   const topnav = document.querySelector('.site-header');
   const title = document.querySelector('.build-title-sticky');
@@ -265,6 +265,39 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('scroll', updateHeroOpacity);
     window.addEventListener('load', updateHeroOpacity);
   }
+
+    // ────── Home page hero fade (video hero) ──────
+  const homeHero = document.querySelector('.home-hero');
+  const homeFadeTarget =
+    document.querySelector('.band--first') ||  // About Us band
+    document.querySelector('.btp-block') ||    // fallback
+    (homeHero ? homeHero.nextElementSibling : null);
+
+  if (homeHero && homeFadeTarget) {
+    function updateHomeHeroOpacity() {
+      if (document.body.classList.contains('no-scroll')) return;
+
+      const fadeTop = homeFadeTarget.getBoundingClientRect().top;
+      const fadeStart = window.innerHeight * 0;      // tweak if you want it to start later
+      const fadeEnd   = window.innerHeight * 0.85;   // fully faded near top
+
+      const progress = Math.min(
+        Math.max((fadeTop - fadeStart) / (fadeEnd - fadeStart), 0),
+        1
+      );
+
+      homeHero.style.opacity = progress.toFixed(3);
+    }
+
+    window.addEventListener('scroll', updateHomeHeroOpacity);
+    window.addEventListener('load', updateHomeHeroOpacity);
+  }
+
+
+
+
+
+
 
     // ────── Scroll Direction Tracker ──────
     let lastY = window.pageYOffset || document.documentElement.scrollTop || 0;
@@ -558,6 +591,27 @@ if (!lb.dataset.zoomBound) {
   // Called from show() when switching images
   lb.resetZoom = () => resetZoom(false);
 
+  lb.resetForNewImage = () => {
+    // reset core zoom state
+    scale = MIN_SCALE;
+    tx = 0;
+    ty = 0;
+    setZoomedClass();
+
+    // wipe any transitions/transform left over from the previous image
+    const old = imgEl.style.transition;
+    imgEl.style.transition = 'none';
+    imgEl.style.transform = 'translate(0px, 0px) scale(1)';
+    void imgEl.offsetWidth; // force reflow
+    imgEl.style.transition = old;
+
+    // force these to be recomputed for the new image when needed
+    baseImgWidth = 0;
+    baseImgHeight = 0;
+    baseInnerWidth = 0;
+    baseInnerHeight = 0;
+  };
+
   // ---- Cursor-anchored zoom ----
 function zoomAt(clientX, clientY, targetScale) {
   const oldScale = scale;
@@ -830,7 +884,7 @@ function zoomAt(clientX, clientY, targetScale) {
     function show(i) {  
       const item = group[i];
       if (!item) return;
-      lb?.resetZoom?.();
+      lb?.resetForNewImage?.();
       imgEl.alt = item.alt;
       imgEl.src = item.src;         // might be data-full or currentSrc
       counterEl.textContent = `${i + 1} / ${group.length}`;
@@ -915,6 +969,8 @@ function zoomAt(clientX, clientY, targetScale) {
       card.addEventListener('focusout', stop);
     });
   })();
+  
+
 
   // --- Instagram card active state + dim siblings ---
   (function () {
@@ -925,6 +981,9 @@ function zoomAt(clientX, clientY, targetScale) {
     if (!cards.length) return;
 
     let activeCard = null;
+    // When true, ignore the *next* activation (hover OR focus) on any card
+    let suppressNextActivation = false;
+    let leftViaFollow = false;
 
     function clearActive() {
       grid.classList.remove('social-grid--hovering');
@@ -941,46 +1000,77 @@ function zoomAt(clientX, clientY, targetScale) {
       if (activeCard) activeCard.classList.add('is-active');
     }
 
-    cards.forEach(card => {
+    // Called whenever we know we're "leaving" the grid/tab
+    function markLeaving() {
+      suppressNextActivation = true; // swallow first fake hover/focus when we come back
+      clearActive();
+    }
+    
+
+    cards.forEach((card) => {
       card.addEventListener('mouseenter', () => {
+        if (suppressNextActivation) {
+          if (leftViaFollow) {
+            // Left via Follow Us: DO NOT swallow this first hover
+            suppressNextActivation = false;
+            leftViaFollow = false;
+          } else {
+            // Normal case (left via card click): swallow the synthetic hover
+            suppressNextActivation = false;
+            return;
+          }
+        }
+
         grid.classList.add('social-grid--hovering');
         setActive(card);
       });
 
       card.addEventListener('focusin', () => {
+        if (suppressNextActivation) {
+          if (leftViaFollow) {
+            suppressNextActivation = false;
+            leftViaFollow = false;
+          } else {
+            suppressNextActivation = false;
+            return;
+          }
+        }
+
         grid.classList.add('social-grid--hovering');
-        setActive(card); 
+        setActive(card);
       });
 
-      // When you press on the card (before navigation), clear active state
-      card.addEventListener('mousedown', () => {
-        clearActive();
-      });
     });
 
+    const followBtn = document.querySelector('.social-head .btn-cta');
+      if (followBtn) {
+        followBtn.addEventListener('mousedown', () => {
+          leftViaFollow = true;
+        });
+      }
 
-    // When mouse leaves the whole grid, clear everything
+    // Mouse leaves the whole grid → no card should be active
     grid.addEventListener('mouseleave', clearActive);
 
-    // Keyboard / focus leave
+    // Keyboard / focus leaves the grid
     grid.addEventListener('focusout', () => {
       if (!grid.contains(document.activeElement)) {
         clearActive();
       }
     });
 
-    // If the tab/window loses focus or is hidden, reset the grid state
-    window.addEventListener('blur', clearActive);
-    window.addEventListener('pagehide', clearActive);
+    // Tab / page transitions: we're effectively leaving the grid
+    window.addEventListener('blur', markLeaving);
+    window.addEventListener('pagehide', markLeaving);
 
     document.addEventListener('visibilitychange', () => {
       if (document.visibilityState === 'hidden') {
-        clearActive();
+        markLeaving();
       }
     });
-
-
   })();
+
+
 
 
 

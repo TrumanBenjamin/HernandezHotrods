@@ -1,0 +1,38 @@
+<main class="admin-page">
+  <h1>Instagram Access Token</h1>
+
+  <% if (current) { %>
+    <p>
+      <strong>Current token:</strong>
+      <code><%= current.access_token.slice(0, 6) %>...<%= current.access_token.slice(-6) %></code>
+    </p>
+    <% if (current.expires_at) { %>
+      <p><strong>Expires on:</strong>
+  <%= current.expires_at.toLocaleDateString('en-US', {
+        month: 'numeric',
+        day: 'numeric',
+        year: 'numeric'
+     }) %>
+</p>
+    <% } %>
+  <% } else { %>
+    <p>No token stored yet.</p>
+  <% } %>
+
+  <% if (saved) { %>
+    <div class="flash-success">
+        ✔ New Instagram token saved successfully!
+    </div>
+    <% } %>
+
+  <hr>
+
+  <h2>Update Token</h2>
+  <p>Paste a new long-lived Instagram access token from the Meta developer UI.</p>
+
+  <form method="POST" action="/admin/ig-token">
+    <label for="token">New token:</label><br>
+    <textarea id="token" name="token" rows="4" cols="80" required></textarea><br><br>
+    <button type="submit" class="btn btn-cta"><span>Save Token</span></button>
+  </form>
+</main>
