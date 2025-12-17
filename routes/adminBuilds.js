@@ -169,7 +169,6 @@ router.post(
         return res.redirect('/admin');
       }
 
-      // Update text fields if provided
       const sets = [];
       const vals = [];
       let i = 1;
@@ -187,7 +186,6 @@ router.post(
         );
       }
 
-      // Prepare dest dir
       const destDir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(build_id));
       await ensureDir(destDir);
 
@@ -197,21 +195,17 @@ router.post(
         await fs.rename(file.path, destPath);
         const webPath = `/uploads/builds/${build_id}/${filename}`;
 
-        // (optional) clean up any legacy photo row that pointed to this path
         await client.query(`DELETE FROM build_photos WHERE build_id=$1 AND url=$2`, [build_id, webPath]);
 
-        // update the builds column
         await client.query(
           `UPDATE builds SET ${colName} = $1, updated_at = NOW() WHERE id = $2`,
           [webPath, build_id]
         );
       };
 
-      // If new fixed images were uploaded, replace them in the builds row
       await replaceBuildColumn(req.files.thumb_image?.[0], 'thumb.jpg', 'thumb_image');
       await replaceBuildColumn(req.files.hero_image?.[0],  'hero.jpg',  'hero_image');
 
-      // append new gallery photos
       let nextOrder = 1;
       const { rows: maxRows } = await client.query(
         `SELECT COALESCE(MAX(sort_order), 0) AS max FROM build_photos WHERE build_id=$1`,
@@ -832,9 +826,7 @@ router.post(
 );
 
 // ---------------- Update For Sale ------------------- //
-// ─────────── For-Sale: photo listing / replace / delete (new) ─────────── //
 
-/** small helper to resolve "/uploads/..." -> absolute path under /public */
 const toPublicAbs = (u) =>
   path.join(__dirname, '..', 'public', String(u).replace(/^[\\/]+/, '').replace(/\//g, path.sep));
 
@@ -883,7 +875,6 @@ router.post(
         req.body.ajax === '1';
 
       if (wantsJSON) {
-        // URL didn’t change; front-end will cache-bust with ?v=timestamp
         return res.json({ ok: true, url: row.url });
       }
       return res.redirect('/admin');
@@ -900,24 +891,18 @@ router.post(
 // MAX photos per for-sale item
 const MAX_SALE_PHOTOS = 16;
 
-// Ensure a folder exists
 async function ensureDir(dir) {
   await fs.mkdir(dir, { recursive: true });
 }
 
 /**
  * POST /admin/for-sale/photos/add
- * Body: item_id
- * Files: photos[] (multiple)
- *
- * Appends up to MAX_SALE_PHOTOS total. If too many selected, only first N are used
- * and the rest are discarded (temp files removed). Responds with JSON for AJAX or
- * redirects with a flash-style message.
  */
+
 router.post(
   '/admin/for-sale/photos/add',
   ensureAuth,
-  upload.array('photos', MAX_SALE_PHOTOS), // multer per-request cap (safe guard)
+  upload.array('photos', MAX_SALE_PHOTOS),
   async (req, res, next) => {
     const wantsJSON =
       (req.headers.accept && req.headers.accept.includes('application/json')) ||
@@ -936,7 +921,6 @@ router.post(
     try {
       await client.query('BEGIN');
 
-      // Current count and next sort slot
       const { rows: cntRows } = await client.query(
         'SELECT COUNT(*)::int AS n FROM for_sale_photos WHERE item_id = $1',
         [item_id]
@@ -953,23 +937,19 @@ router.post(
                          : res.redirect('/admin?msg=' + encodeURIComponent(msg));
       }
 
-      // Keep only as many as will fit; delete the rest from tmp
       const allowed = files.slice(0, room);
       const extra = files.slice(room);
       for (const f of extra) { try { await fs.unlink(f.path); } catch {} }
 
-      // Prepare destination folder
       const destDir = path.join(__dirname, '..', 'public', 'uploads', 'for-sale', String(item_id));
       await ensureDir(destDir);
 
-      // Determine next sort_order accurately
       const { rows: maxRows } = await client.query(
         'SELECT COALESCE(MAX(sort_order), 0) AS max FROM for_sale_photos WHERE item_id=$1',
         [item_id]
       );
       let nextOrder = Number(maxRows[0].max) + 1;
 
-      // Move each allowed file and insert row
       let added = 0;
       for (const f of allowed) {
         const filename = `${nextOrder}.jpg`;                       // keep numeric slot filenames

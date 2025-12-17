@@ -242,28 +242,42 @@ document.addEventListener('DOMContentLoaded', function () {
   const wipSection = document.querySelector('.wip-section');
   const completedContainer = document.querySelector('.container');
 
-  if (hero && (wipSection || completedContainer)) {
+   if (hero && (wipSection || completedContainer)) {
 
-    // HERO OPACITY!!
-    function updateHeroOpacity() {
+    // HERO OPACITY + BLUR!!
+    function updateHeroOpacityAndBlur() {
       if (document.body.classList.contains('no-scroll')) return;
 
       const fadeTarget = wipSection || completedContainer;
       if (!fadeTarget) return;
 
-      const fadeTop = fadeTarget.getBoundingClientRect().top;
-      const fadeStart = window.innerHeight * 0; // start fading when next section is 25% from top
-      const fadeEnd = window.innerHeight * 0.85;   // fully faded near top
+      const fadeTop   = fadeTarget.getBoundingClientRect().top;
+      const fadeStart = window.innerHeight * 0;    // when to START fading/blurring
+      const fadeEnd   = window.innerHeight * 0.85; // fully faded/blurred near top
 
-      const progress = Math.min(Math.max((fadeTop - fadeStart) / (fadeEnd - fadeStart), 0), 1);
-      hero.style.opacity = progress.toFixed(3);
+      // 0 = fully faded/blurred, 1 = fully visible/sharp
+      const progress = Math.min(
+        Math.max((fadeTop - fadeStart) / (fadeEnd - fadeStart), 0),
+        1
+      );
+
+      const opacity = progress;
+      const maxBlur = 3; // px – tweak to taste
+      const blur    = (1 - progress) * maxBlur;
+
+      const maxGray = 1;  // 0..1 (1 = fully grayscale)
+      const gray    = (1 - progress) * maxGray;
+
+      hero.style.opacity = opacity.toFixed(3);
+      hero.style.filter  = `blur(${blur.toFixed(2)}px) grayscale(${gray.toFixed(3)})`;
+
       if (title) {
         title.style.opacity = hero.style.opacity;
       }
     }
 
-    window.addEventListener('scroll', updateHeroOpacity);
-    window.addEventListener('load', updateHeroOpacity);
+    window.addEventListener('scroll', updateHeroOpacityAndBlur);
+    window.addEventListener('load',  updateHeroOpacityAndBlur);
   }
 
     // ────── Home page hero fade (video hero) ──────
@@ -273,25 +287,33 @@ document.addEventListener('DOMContentLoaded', function () {
     document.querySelector('.btp-block') ||    // fallback
     (homeHero ? homeHero.nextElementSibling : null);
 
-  if (homeHero && homeFadeTarget) {
-    function updateHomeHeroOpacity() {
+    if (homeHero && homeFadeTarget) {
+    function updateHomeHeroOpacityAndBlur() {
       if (document.body.classList.contains('no-scroll')) return;
 
-      const fadeTop = homeFadeTarget.getBoundingClientRect().top;
-      const fadeStart = window.innerHeight * 0;      // tweak if you want it to start later
-      const fadeEnd   = window.innerHeight * 0.85;   // fully faded near top
+      const fadeTop   = homeFadeTarget.getBoundingClientRect().top;
+      const fadeStart = window.innerHeight * 0;      // when to START fading/blurring
+      const fadeEnd   = window.innerHeight * 0.85;   // when hero is fully faded/blurred
 
+      // 0 = fully faded/blurred, 1 = fully visible/sharp
       const progress = Math.min(
         Math.max((fadeTop - fadeStart) / (fadeEnd - fadeStart), 0),
         1
       );
 
-      homeHero.style.opacity = progress.toFixed(3);
+      const opacity = progress;
+      const maxBlur = 3; // px – tweak to taste
+
+      const blur = (1 - progress) * maxBlur;
+
+      homeHero.style.opacity = opacity.toFixed(3);
+      homeHero.style.filter  = `blur(${blur.toFixed(2)}px)`;
     }
 
-    window.addEventListener('scroll', updateHomeHeroOpacity);
-    window.addEventListener('load', updateHomeHeroOpacity);
+    window.addEventListener('scroll', updateHomeHeroOpacityAndBlur);
+    window.addEventListener('load',  updateHomeHeroOpacityAndBlur);
   }
+
 
 
 

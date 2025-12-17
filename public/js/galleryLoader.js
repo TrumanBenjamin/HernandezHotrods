@@ -1,16 +1,11 @@
 // /public/js/galleryLoader.js
 (function () {
-  // --- tiny logger -----------------------------------------------------------
   const debug = (...args) => console.log('[gallery]', ...args);
 
-  // --- helpers ---------------------------------------------------------------
-  // Ensure each .gallery-item has an <img>. If the figure has data-* attributes,
-  // create an <img> and migrate them; otherwise return the existing <img>.
-  // Waits until ALL <img> in a row are truly ready (loaded + decoded).
+  // --- helpers ---
   async function waitRowStrict(row) {
     const imgs = Array.from(row.querySelectorAll('.gallery-item img'));
 
-    // start any lazy ones now, but keep them hidden (no prepaint)
     imgs.forEach((img) => {
       img.style.opacity = '0';
       img.style.transform = 'translateY(8px)';
@@ -18,15 +13,12 @@
       try { img.fetchPriority = 'high'; } catch (_) {}
       img.decoding = 'async';
       if (img.dataset && img.dataset.src) {
-        // attach listeners BEFORE promoting
-        // (avoids missing 'load' on cached images)
         img._hlrPromoted = true;
         img.src = img.dataset.src;
         img.removeAttribute('data-src');
       }
     });
 
-    // per-image promise that resolves ONLY on real readiness
     const waitOne = (img) =>
       new Promise((resolve) => {
         const finalize = () => {
@@ -38,12 +30,9 @@
         img.addEventListener('load', finalize, { once: true });
       });
 
-    // Strict barrier: do not continue until ALL 4 are ready
     await Promise.all(imgs.map(waitOne));
 
-    // double-check (belt & suspenders)
     if (!imgs.every(i => i.complete && i.naturalWidth > 0)) {
-      // if something was dodgy, wait one animation frame and recheck
       await new Promise(r => requestAnimationFrame(r));
       if (!imgs.every(i => i.complete && i.naturalWidth > 0)) return { ok:false, imgs };
     }
@@ -54,11 +43,9 @@
   function primeRowImages(row) {
     const imgs = Array.from(row.querySelectorAll('.gallery-item')).map(ensureImgForItem);
     imgs.forEach((img) => {
-      // keep hidden so nothing prepaints
       img.style.opacity = '0';
       img.style.transform = 'translateY(8px)';
 
-      // if still lazy, promote now so requests start immediately
       if (img.dataset && img.dataset.src) {
         img.loading = 'eager';
         try { img.fetchPriority = 'high'; } catch (_) {}
@@ -74,15 +61,13 @@
     if (!img) {
       img = new Image();
       img.decoding = 'async';
-      img.loading = 'eager'; // we control reveal timing; don't lazy-load
-      // pull metadata from the figure if present
+      img.loading = 'eager';
       if (item.dataset.src) img.dataset.src = item.dataset.src;
       if (item.dataset.alt) img.alt = item.dataset.alt;
       if (item.dataset.w) img.width = parseInt(item.dataset.w, 10);
       if (item.dataset.h) img.height = parseInt(item.dataset.h, 10);
       item.appendChild(img);
     } else {
-      // If <img> exists but src is on data-attr, inherit it
       if (!img.src && item.dataset.src && !img.dataset.src) {
         img.dataset.src = item.dataset.src;
       }
@@ -95,7 +80,6 @@
   const items = Array.from(row.querySelectorAll('.gallery-item'));
   const imgs = items.map(ensureImgForItem);
 
-  // make sure nothing prepaints
   imgs.forEach((img) => {
     img.classList.remove('is-loaded', 'loaded', 'lazyloaded');
     img.style.opacity = '0';
@@ -112,7 +96,6 @@
   });
 }
 
-  // Wait for a single <img> to be truly ready (loaded + decoded)
   function waitImg(img) {
     return new Promise((resolve) => {
       const settle = () => {
@@ -123,16 +106,12 @@
         }
       };
 
-      // Always force eager/high priority
       img.loading = 'eager';
       try { img.fetchPriority = 'high'; } catch (_) {}
       img.decoding = 'async';
 
-      // If we have a lazy source, promote it
       if (img.dataset && img.dataset.src) {
-        // attach listeners BEFORE setting src
         img.addEventListener('load', settle, { once: true });
-        // don't resolve on error — we only reveal on successful loads
         img.src = img.dataset.src;
         img.removeAttribute('data-src');
 
@@ -140,13 +119,11 @@
         return;
       }
 
-      // Already has a real src
       if (img.complete && img.naturalWidth > 0) { settle(); return; }
       img.addEventListener('load', settle, { once: true });
     });
   }
 
-  // Wrap every 4 .gallery-item into a logical "row" (display: contents)
   function ensureRows(grid) {
     let rows = Array.from(grid.querySelectorAll('.gallery-row'));
     if (rows.length) return rows;
@@ -164,7 +141,6 @@
     return rows;
   }
 
-    // Load and reveal rows strictly in DOM order; each row reveals when all 4 ready
     async function loadAndRevealGrid(grid) {
     if (grid.__started) return;
     grid.__started = true;
@@ -180,7 +156,6 @@
       if (inView) primeRowImages(row);
     });
 
-    // force-hide all images immediately (in case browser painted before JS ran)
     grid.querySelectorAll('img').forEach((img) => {
       img.style.opacity = '0';
       img.style.transform = 'translateY(8px)';
@@ -189,10 +164,8 @@
     for (let r = 0; r < rows.length; r++) {
       const row = rows[r];
 
-      // Wait for all images in this row to be truly ready (loaded + decoded)
       const { ok, imgs } = await waitRowStrict(row);
 
-      // Optional: tiny settle for the first row when it was visible at init
       if (r === 0) {
         const rect0 = row.getBoundingClientRect();
         const inView0 = rect0.top <= vh && rect0.bottom >= 0;
@@ -215,7 +188,7 @@
   // end of loadgrid
 
   
-  // Start the load when the gallery top reaches viewport top (or is already visible)
+  // Start the load when the gallery top reaches viewport top
   function kickWhenTopReachesViewport(grid) {
     let kicked = false;
 
@@ -242,20 +215,19 @@
           if (e.isIntersecting) {
             debug('IO fired → start');
             start();
-            io.unobserve(e.target); // prevent retrigger
+            io.unobserve(e.target);
             break;
           }
         }
       },
       {
         root: null,
-        rootMargin: '0px 0px -20% 0px', // start when ~20% from bottom
-        threshold: 0.2,                 // 20% of element visible
+        rootMargin: '0px 0px -20% 0px',
+        threshold: 0.2,               
       }
     );
     io.observe(grid);
 
-    // Safety net: if IO fails for some reason, start after a short delay
     setTimeout(() => {
       if (!kicked) {
         debug('fallback timer → start');
@@ -264,14 +236,13 @@
     }, 1500);
   }
 
-  // --- init ------------------------------------------------------------------
+  // --- init ---
   function init() {
     const grids = Array.from(document.querySelectorAll('.gallery-grid'));
     if (!grids.length) return;
     grids.forEach((g) => kickWhenTopReachesViewport(g));
   }
 
-  // Run ASAP; also on DOMContentLoaded just in case this file is in <head>
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', init, { once: true });
   } else {

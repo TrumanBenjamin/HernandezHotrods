@@ -15,8 +15,6 @@
 
     <% items.forEach(function(item){ %>
       <article class="wip-section" id="<%= item.slug %>">
-          
-
         <section class="wip-intro container" data-animate>
           <h2 class="wip-heading">
             <%= item.title %>
@@ -26,22 +24,14 @@
           </h2>
           <p class="wip-paragraph"><%= item.description %></p>
 
-          <!-- If you later want a “Posted on …” line, uncomment:
-          <p class="wip-meta">Listed <%= new Date(item.posted_at).toLocaleDateString() %></p>
-          -->
+          <% if (item.photos && item.photos.length) { %>
+          <div class="gallery-grid no-global-img">
+            <% item.photos.forEach(function (p, i) { %>
+              <% if (i % 4 === 0) { %>
+                <section class="gallery-row"><!-- start row -->
+              <% } %>
 
-          
-        </section>
-
-        <!-- Gallery -->
-        <% if (item.photos && item.photos.length) { %>
-        <section class="gallery-grid no-global-img">
-          <% item.photos.forEach(function (p, i) { %>
-            <% if (i % 4 === 0) { %>
-              <section class="gallery-row"><!-- start row -->
-            <% } %>
-
-            <figure class="gallery-item" data-animate>
+              <figure class="gallery-item" data-animate>
                 <% const base = p.url; %>
                 <img
                   class="lazy"
@@ -57,18 +47,19 @@
                   loading="lazy"
                   decoding="async"
                   fetchpriority="low"
-                  data-lightbox="gallery"       
+                  data-lightbox="gallery"
                   data-full="/img/2000/70<%= base %>">
-            </figure>
+              </figure>
 
-            <% if (i % 4 === 3 || i === item.photos.length - 1) { %>
-              </section><!-- end row -->
-            <% } %>
-          <% }) %>
+              <% if (i % 4 === 3 || i === item.photos.length - 1) { %>
+                </section><!-- end row -->
+              <% } %>
+            <% }) %>
+          </div>
+          <% } %>
         </section>
-        <% } %>
 
-        <div class="for-sale-divider" aria-hidden="true"></div>    
+        <div class="for-sale-divider" aria-hidden="true"></div>
       </article>
     <% }) %>
       <div class="forSaleContact">

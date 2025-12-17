@@ -381,7 +381,7 @@ footer {
       left: 50%;
       transform: translateX(-50%);
       width: 100vw;        /* cap at viewport width */
-      height: 30px;
+      height: 15px;
       display: flex;
       align-items: center;
       font-family: "IBM Plex Sans Condensed", "Bebas Neue", sans-serif;
@@ -394,43 +394,68 @@ footer {
       z-index: 5;
       text-transform: uppercase;
       text-align: center;
-      background: #0d0d0d;
+      background: rgba(18, 18, 18, 0.35);
+      backdrop-filter: blur(14px) saturate(135%);
+      -webkit-backdrop-filter: blur(14px) saturate(135%);
+      box-shadow:
+        0 6px 18px rgba(0,0,0,0.45),
+        inset 0 1px 0 rgba(255,255,255,0.06);
       line-height: 1;
     }
 
-    /* 🔹 tiling “BTP” overlay that fills full width and height */
-    .btp-block::after {
+    .btp-block::before{
+      content: '';
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 50%;
+      transform: translateY(-50%);
+      height: 3px;
+      background: linear-gradient(
+        to right,
+        rgba(210,38,34,0),
+        #820300d9,
+        rgba(210,38,34,0)
+      );
+      /* box-shadow: 0 0 6px rgba(210,38,34,0.6); */
+      pointer-events: none;
+    }
+
+    .show-completed .btp-block {
+      background: rgba(18, 18, 18, 0.85);
+    }
+
+    .show-current .btp-block {
+      background: rgba(18, 18, 18, 0.85);
+    }
+
+
+    /* .btp-block::after {
       content: "BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM "
       "BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM "
       "BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM "
       "BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM BUILT TO PERFORM ";
       position: absolute;
-      inset: 0;                    /* fill the block */
+      inset: 0;                 
       display: flex;
-      align-items: center;         /* vertical center while we nudge to touch edges */
+      align-items: center;       
       white-space: nowrap;
-      width: 200vw;     /* long enough to cover any viewport */
-      font: inherit;               /* uses your 40px size/weight/family */
+      width: 200vw;   
+      font: inherit;           
       letter-spacing: inherit;
       color: inherit;
       line-height: 1;
       pointer-events: none;
-      animation: btp-belt 80s linear infinite;   /* slow “conveyor” */
+      animation: btp-belt 80s linear infinite;
       will-change: transform;
-
-      /* tiny vertical nudge so letters visually touch top/bottom in Bebas */
       transform: translateY(-4%) translateX(-25vw);
-    }
-    @keyframes btp-belt {
+    } */
+    /* @keyframes btp-belt {
       from { transform: translateY(-4%) translateX(0); }
-      to   { transform: translateY(-4%) translateX(-50%); } /* half the 200vw width */
-    }
+      to   { transform: translateY(-4%) translateX(-50%); } 
+    } */
     @media (prefers-reduced-motion: reduce) {
       .btp-block::after { animation: none !important; }
-    }
-    .is-home .btp-block {
-      color: rgb(101 97 97 / 24%);
-      background: #0a0a0a;
     }
     .is-home html {
       background: auto;
@@ -504,6 +529,7 @@ footer {
   height: 100%;
   min-height: 0;
   overflow: hidden;
+  box-shadow: 0px 0px 10px 2px #030303;
 }
 
 /* Section label (compact chip) */
@@ -533,16 +559,6 @@ footer {
   font-weight: 500;
 }
 
-/* gradient + blur layer */
-.block .info-inner h2::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  z-index: -1; /* sits behind the text */
-  opacity: 0;
-  /* backdrop-filter: blur(8px); 
-  -webkit-backdrop-filter: blur(8px);  */
-}
 
 /* remove native bullets and create room for the custom tick */
 .info-inner ul {
@@ -1947,6 +1963,7 @@ span.cta{ margin-left: 10px; letter-spacing: .2px; }
       overflow: hidden;
       z-index: 0;
       transition: opacity 0.05s linear;
+      will-change: opacity, filter;
     }
 
     .hero-img {
@@ -2061,14 +2078,14 @@ span.cta{ margin-left: 10px; letter-spacing: .2px; }
 /* Small tablets — remove side bars, center text higher */
 @media (max-width: 768px) {
   .build-title-sticky {
-    font-size: 12vw;
+    font-size: 8vw;
     width: 100%;
     margin: 0 auto;
     max-width: none;
     padding: 20px 10px;
     box-sizing: border-box;
     text-align: center;
-    background: rgb(0 0 0 / 40%);
+    background: rgb(0 0 0 / 60%);
     -webkit-backdrop-filter: blur(10px) saturate(120%);
     backdrop-filter: blur(6px) saturate(120%);
     border-top: #0e0e0e 1px solid;
@@ -2126,6 +2143,7 @@ body.is-home .nav-logo.visible {
   min-height: 100vh;
   display: flex;
   flex-direction: column;   /* stack logo + slogan */
+  will-change: opacity, filter;
 }
 
 /* Home hero uses the global fixed .hero behavior */
@@ -2773,7 +2791,7 @@ body.is-home .nav-logo.visible {
 }
 
 .show-current .wip-section {
-  padding-top: 40px;
+  padding-top: 50px;
 }
 
 .wip-section {
@@ -2789,7 +2807,7 @@ body.is-home .nav-logo.visible {
 
 .wip-intro {
   /* border: 1px solid #141414; */
-  box-shadow: 0 0 20px 0px rgb(14 14 14 / 50%);
+  box-shadow: 0 0 20px 10px rgb(14 14 14 / 50%);
   margin: 100px auto 20px;
   background: radial-gradient(circle at 40% 30%, #161616 0%, #030303 80%);
   background-attachment: fixed;
@@ -3020,23 +3038,25 @@ html.is-ready .gallery-grid img.is-loaded {
 }
 .page.forSale .wip-intro {
   margin: 100px auto 00px;
-  background: #010101b5;
+  background: #010101e0;
   width: 90%;
-  min-height: 400px;
-  box-shadow: 0px -5px 20px 0px rgb(14 14 14 / 50%);
+  min-height: 300px;
+  box-shadow: 0px 0px 20px 10px rgb(14 14 14 / 50%);
 }
 
 .page.forSale .gallery-grid {
   margin: 0 auto;
-  width: 90%;
+  width: 100%;
   box-sizing: border-box;
   border: none;
   box-shadow: 0px 20px 20px 0px rgb(14 14 14 / 50%);
+  background: none;
 }
 
 
 .page.forSale .wip-paragraph {
   margin: 0;
+  min-height: 150px;
 }
 
 :root{
@@ -4029,6 +4049,43 @@ body.gate-hover:not(.hover-ready) :is(
 
 
 
+.hero-glass-divider{
+  height: 74px;
+  position: relative;
+  z-index: 10;
+  pointer-events: none;
+
+  background: rgba(18,18,18,0.40);
+  backdrop-filter: blur(16px) saturate(140%);
+  -webkit-backdrop-filter: blur(16px) saturate(140%);
+
+  /* IMPORTANT: fade the element itself out toward the bottom */
+  -webkit-mask-image: linear-gradient(
+    to bottom,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 35%,
+    rgba(0,0,0,0.85) 55%,
+    rgba(0,0,0,0.45) 75%,
+    rgba(0,0,0,0) 100%
+  );
+  mask-image: linear-gradient(
+    to bottom,
+    rgba(0,0,0,1) 0%,
+    rgba(0,0,0,1) 35%,
+    rgba(0,0,0,0.85) 55%,
+    rgba(0,0,0,0.45) 75%,
+    rgba(0,0,0,0) 100%
+  );
+
+  border-top: 1px solid rgba(255,255,255,0.10);
+
+  box-shadow:
+    0 16px 38px rgba(0,0,0,0.55),
+    inset 0 1px 0 rgba(255,255,255,0.07);
+  overflow: hidden;
+  margin-bottom: -16px;
+}
+
 
 
 
@@ -4083,16 +4140,18 @@ body.gate-hover:not(.hover-ready) :is(
   .hero-logo {
     width: 60vw !important;
   }
+  .lightbox__counter {
+    padding: 10px 40px 5px;
+  }
 
   .btp-block {
-    font-size: 17px !important;
-    height: 20px !important;
+    height: 12px !important;
   }
   .adtlPhotos {
     font-size: 30px !important;
   }
-  .btp-block::after {
-    animation: btp-belt 40s linear infinite;
+  .btp-block::before {
+    height: 3px;
   }
   .cta-heading {
     font-size: 22px;
@@ -4148,6 +4207,9 @@ body.gate-hover:not(.hover-ready) :is(
   }
   .nav-overlay::before {
     background-image: none;
+  }
+  .build-title-sticky {
+    font-size: 12vw !important;
   }
 
 
@@ -4266,11 +4328,19 @@ body.gate-hover:not(.hover-ready) :is(
   .overlay h2 {
     font-size: 42px !important;
   }
+
+  .block .info-inner {
+    min-height: 200px;
+
+  }
+
     .block .info-inner h2 {
-    height: 100%;
+    height: 60px !important;
     font-size: 26px !important;
     padding: 6px 12px;
   }
+
+
   .info-inner ul {
     font-size: 20px;
   }
@@ -4471,8 +4541,12 @@ body.gate-hover:not(.hover-ready) :is(
     font-size: 35px;
     margin: 0;
   }
+  .block .info-inner {
+    min-height: 300px;
+    max-height: 500px;
+  }
   .block .info-inner h2 {
-    height: 100%;
+    height: 90px;
     font-size: 40px;
   }
   .band-text {

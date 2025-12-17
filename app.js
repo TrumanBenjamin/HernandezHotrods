@@ -140,7 +140,12 @@ app.get('/img/:w/:q/*', async (req, res) => {
 
     const baseName = relPath.replace(/[\\/]/g, '_'); // safe file name
     const outExt = toWebP ? 'webp' : 'jpg';
-    const outName = `${width}_${quality}_${baseName}.${outExt}`;
+
+    // 👇 ADD THIS: version token changes whenever the source file changes
+    const st = await fs.stat(srcAbs);
+    const v = `${Math.floor(st.mtimeMs)}_${st.size}`; // stable + fast
+
+    const outName = `${width}_${quality}_${baseName}_${v}.${outExt}`;
     const cacheAbs = path.join(cacheDir, outName);
 
     // If cached file exists, stream it

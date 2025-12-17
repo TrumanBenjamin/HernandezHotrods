@@ -24,7 +24,6 @@ async function fetchInstagramPosts(limit = 3) {
     }
     const token = current.access_token;
 
-  // Basic Display API: /me/media (token authorizes the user)
   const fields = [
     'id',
     'caption',
@@ -48,7 +47,6 @@ async function fetchInstagramPosts(limit = 3) {
   }
   const json = await resp.json();
 
-  // Normalize: choose a display image for both photos & videos
   const posts = (json.data || []).map(p => ({
     id: p.id,
     caption: p.caption || '',
