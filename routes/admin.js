@@ -8,4 +8,7 @@ router.get('/', ensureAuth, adminController.dashboard);
 router.get('/ig-token', ensureAuth, adminController.showIgTokenSettings);
 router.post('/ig-token', ensureAuth, adminController.updateIgToken);
 
+router.get('/users/new', ensureAuth, adminController.newUserForm);
+router.post('/users/new', ensureAuth, adminController.createUser);
+
 module.exports = router;

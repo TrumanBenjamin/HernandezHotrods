@@ -1,7 +1,9 @@
 <main class="admin-page">
   <header class="admin-header">
-    <h1>Admin</h1>
-    <h2 class="admin-greeting">Hello, Truman!</h2>
+    <h1>Admin Dashboard</h1>
+    <h2 class="admin-greeting"> 
+      Hello, <%= user?.name || '' %>!
+    </h2>
     <form action="/auth/logout" method="post">
         <button class="admin btn-send"><span>Log out</span></button>
     </form>
@@ -10,6 +12,7 @@
   <!-- IG Token Quick Link -->
   <div class="admin-quick-links">
     <a href="/admin/ig-token" class="btn-ig-token"> <span>Manage Instagram Access Token</span></a>
+    <a href="/admin/users/new" class="new-user btn-ig-token"><span>Create New User</span></a>
   </div>
 
   <!-- Optional success/error flash area -->
@@ -576,7 +579,6 @@
           <ul id="team-sort-list">
             <% (team || [])
               .sort((a,b)=>(a.sort_order ?? 1e9)-(b.sort_order ?? 1e9))
-              .reverse()   // ← flip top/bottom in the UI
               .forEach(m => { %>
               <li class="team-sort-item" data-id="<%= m.id %>">
                 <span><%= m.name %></span>
@@ -589,7 +591,9 @@
         
         <label>Select Member
           <select name="member_id" required>
-            <% (team || []).forEach(m => { %>
+            <% (team || [])
+              .sort((a,b)=>(a.sort_order ?? 1e9)-(b.sort_order ?? 1e9))
+              .forEach(m => { %>
               <option value="<%= m.id %>"><%= m.name %> — <%= m.role %></option>
             <% }) %>
           </select>
@@ -1221,6 +1225,31 @@
   select?.addEventListener('change', () => loadExisting(select.value));
 })();
 </script>
+<script>
+  function confirmDelete(form) {
+    // find the first select that looks like an "entity picker"
+    const select =
+      form.querySelector('select[name="item_id"]') ||
+      form.querySelector('select[name="build_id"]') ||
+      form.querySelector('select[name="member_id"]');
+
+    // pick a label based on which one we found
+    const label =
+      select?.name === 'item_id'   ? 'listing' :
+      select?.name === 'build_id'  ? 'build' :
+      select?.name === 'member_id' ? 'team member' :
+      'item';
+
+    if (!select || !select.value) {
+      alert(`Select a ${label} to delete first.`);
+      return false; // cancel submit
+    }
+
+    const text = select.options[select.selectedIndex]?.text?.trim() || `this ${label}`;
+    return window.confirm(`Are you sure you want to delete ${text}?\n\nThis cannot be undone.`);
+  }
+</script>
+
 
 
 

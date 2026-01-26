@@ -90,10 +90,13 @@
           accept="image/*"
           multiple
         />
-        <small>PNG/JPG/WebP. Limit 5.</small>
+        <small>PNG/JPG/WebP. Up to 5 images, 25MB total.</small>
       </div>
       <div class="button-wrap">
-        <button type="submit" class="btn-send"><span>Send</span></button>
+        <button type="submit" class="btn-send" id="contactSendBtn">
+          <span class="send-btn__text">Send</span>
+          <span class="send-btn__spinner" aria-hidden="true"></span>
+        </button>
       </div>
       
     </form>
@@ -104,24 +107,81 @@
     </div>
   </section>
 
-  <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const alerts = document.querySelectorAll('.form-flash');
-      if (alerts.length > 0) {
-        setTimeout(() => {
-          alerts.forEach(el => {
-            el.classList.add('fade-out');
-            setTimeout(() => el.remove(), 1000);
-          });
-        }, 5000);
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    // Success: auto fade out (same behavior you have now)
+    const success = document.querySelector('.form-flash.form-success');
+    if (success) {
+      setTimeout(() => {
+        success.classList.add('fade-out');
+        setTimeout(() => success.remove(), 1050);
+      }, 5000);
+    }
+
+    // Errors: stay until next submission
+    const form = document.querySelector('form.contact-form');
+    const errors = document.querySelector('.form-flash.form-errors');
+
+    if (form && errors) {
+      form.addEventListener('submit', () => {
+        errors.remove();
+      }, { once: true }); // only need this once
+    }
+
+    // client-side guard (nice UX, server still validates)
+    const input = document.getElementById('photos');
+    if (!input) return;
+
+    const MAX_FILES = 5;
+    const MAX_TOTAL = 25 * 1024 * 1024; // 25MB total
+
+    const formatMB = (bytes) => (bytes / (1024 * 1024)).toFixed(1);
+
+    input.addEventListener('change', (e) => {
+      const files = Array.from(e.target.files || []);
+
+      // max count
+      if (files.length > MAX_FILES) {
+        alert(`Please select at most ${MAX_FILES} images.`);
+        e.target.value = '';
+        return;
+      }
+
+      // total size
+      const totalBytes = files.reduce((sum, f) => sum + (f.size || 0), 0);
+      if (totalBytes > MAX_TOTAL) {
+        alert(
+          `Your selected images total ${formatMB(totalBytes)}MB.\n` +
+          `Please keep the total under ${formatMB(MAX_TOTAL)}MB.`
+        );
+        e.target.value = '';
+        return;
       }
     });
-      // client-side guard (nice UX, server still validates)
-  document.getElementById('photos')?.addEventListener('change', (e) => {
-    if (e.target.files.length > 5) {
-      alert('Please select at most 5 images.');
-      e.target.value = ''; // reset selection
-    }
   });
-  </script>
+</script>
+<script>
+  document.addEventListener('DOMContentLoaded', () => {
+    const form = document.querySelector('form.contact-form');
+    const btn  = document.getElementById('contactSendBtn');
+    const text = btn?.querySelector('.send-btn__text');
+
+    if (!form || !btn || !text) return;
+
+    form.addEventListener('submit', () => {
+      // lock button + show loading state
+      btn.classList.add('is-loading');
+      btn.disabled = true;
+      text.textContent = 'Sending';
+
+      // optional: prevent double-submit by disabling fields
+      form.querySelectorAll('input, textarea,').forEach(el => {
+        if (el.type === 'file') return;
+        el.readOnly = true;
+      });
+    });
+  });
+</script>
+
+
 </main>

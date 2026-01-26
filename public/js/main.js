@@ -280,39 +280,52 @@ document.addEventListener('DOMContentLoaded', function () {
     window.addEventListener('load',  updateHeroOpacityAndBlur);
   }
 
-    // ────── Home page hero fade (video hero) ──────
-  const homeHero = document.querySelector('.home-hero');
-  const homeFadeTarget =
-    document.querySelector('.band--first') ||  // About Us band
-    document.querySelector('.btp-block') ||    // fallback
-    (homeHero ? homeHero.nextElementSibling : null);
+// ────── Home page hero fade (video hero) ──────
+// ────── Home page hero fade (video hero) ──────
+const homeHero = document.querySelector('.home-hero');
+const homeFadeTarget =
+  document.querySelector('.band--first') ||
+  document.querySelector('.btp-block') ||
+  (homeHero ? homeHero.nextElementSibling : null);
+  
 
-    if (homeHero && homeFadeTarget) {
-    function updateHomeHeroOpacityAndBlur() {
-      if (document.body.classList.contains('no-scroll')) return;
+if (homeHero && homeFadeTarget) {
+  const reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  const noFilter = window.matchMedia('(hover: none), (pointer: coarse), (max-width: 1024px)').matches;
 
-      const fadeTop   = homeFadeTarget.getBoundingClientRect().top;
-      const fadeStart = window.innerHeight * 0;      // when to START fading/blurring
-      const fadeEnd   = window.innerHeight * 0.85;   // when hero is fully faded/blurred
+  let ticking = false;
 
-      // 0 = fully faded/blurred, 1 = fully visible/sharp
-      const progress = Math.min(
-        Math.max((fadeTop - fadeStart) / (fadeEnd - fadeStart), 0),
-        1
-      );
+  function update() {
+    ticking = false;
 
-      const opacity = progress;
-      const maxBlur = 3; // px – tweak to taste
+    if (document.body.classList.contains('no-scroll')) return;
+    
+    const fadeDistance = window.innerHeight * 0.85;
+    const t = Math.min(Math.max(window.scrollY / fadeDistance, 0), 1);
 
-      const blur = (1 - progress) * maxBlur;
+    const opacity = 1 - t;
+    homeHero.style.opacity = opacity.toFixed(3);
 
-      homeHero.style.opacity = opacity.toFixed(3);
-      homeHero.style.filter  = `blur(${blur.toFixed(2)}px)`;
+    // Mobile/tablet: avoid filter blur (prevents black flashes)
+    if (reduceMotion || noFilter) {
+      homeHero.style.filter = 'none';
+      return;
     }
 
-    window.addEventListener('scroll', updateHomeHeroOpacityAndBlur);
-    window.addEventListener('load',  updateHomeHeroOpacityAndBlur);
+    const blurPx = t * 3;
+    homeHero.style.filter = `blur(${blurPx.toFixed(2)}px)`;
   }
+
+  function onScroll() {
+    if (ticking) return;
+    ticking = true;
+    requestAnimationFrame(update);
+  }
+
+  window.addEventListener('scroll', onScroll, { passive: true });
+  window.addEventListener('load', update);
+}
+
 
 
 
@@ -1099,7 +1112,7 @@ function zoomAt(clientX, clientY, targetScale) {
   // --- Instagram background subtle spin on scroll ---
   (function () {
     const feed = document.querySelector('.social-feed'); // or .social-feed__inner if that's where bg lives
-    if (!feed) return;
+    if (!feed) return; 
 
     const baseAngle = 180;   // starting angle
     const maxDelta = 20;      // +/- degrees from base (smaller = more subtle)

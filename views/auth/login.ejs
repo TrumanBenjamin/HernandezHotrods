@@ -4,8 +4,26 @@
         <h1>Admin Login</h1>
         <form action="/auth/login" method="post">
         <label>Email <input type="email" name="email" required></label>
-        <label>Password <input type="password" name="password" required></label>
+        <label>Password
+            <div class="password-wrap">
+                <input type="password" name="password" id="login-password" required>
+                <button type="button" class="toggle-password" aria-label="Show password" onclick="togglePassword('login-password', this)">
+                Show
+                </button>
+            </div>
+        </label>
         <button type="submit">Sign in</button>
         </form>
     </div>    
 </main>   
+
+<script>
+function togglePassword(inputId, btn) {
+  const input = document.getElementById(inputId);
+  if (!input) return;
+
+  const showing = input.type === 'text';
+  input.type = showing ? 'password' : 'text';
+  btn.textContent = showing ? 'Show' : 'Hide';
+}
+</script>

@@ -12,17 +12,36 @@
         <img
           id="heroLogoBox"
           class="hero-logo"
-          src="/images/logo/hhrlogot.png"
+          src="/images/logo/hhrlogot-old.png"
           alt="Hernandez Hot Rods & Customs"
         />
       </div>
+
+      <!-- Scroll cue (sits at bottom of hero and hides after scroll) -->
+      <button class="scroll-cue" type="button" aria-label="Scroll to content">
+        <span class="scroll-cue__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" width="26" height="26" focusable="false">
+            <path d="M6 14l6-6 6 6"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="2.5"
+                  stroke-linecap="round"
+                  stroke-linejoin="round"/>
+          </svg>
+        </span>
+
+        <span class="scroll-cue__text">SCROLL</span>
+      </button>
+
     </div>
   </section>
+
+
 
   <!-- Spacer so content scrolls over the fixed hero, like the build pages -->
   <div class="home-hero-spacer"></div>
 
-    <div class="btp">
+    <div class="btp" id="homeContentStart">
       <img src="/images/logo/builttoperform.png" alt="">
     </div>
   </section>
@@ -156,7 +175,7 @@
     </div>
   </section>
 
-  <!-- This section commented out, to be added later -->
+  <!-- This section commented out, to be added later when merchandise is added -->
   <!-- <section class="band band--left" data-animate>
     <div class="band-inner">
       <div class="band-info">
@@ -171,6 +190,21 @@
       </div>  
     </div>
   </section> -->
+
+  <section class="home-contact" data-animate>
+    <div class="home-contact-box">
+      <h2>TALK TO THE TEAM</h2>
+      <p>We’re happy to answer questions or discuss your next build.</p>
+
+      <a href="/contact" class="contact-cta">
+          <span class="cta-spotlight"></span>
+          <span class="contact-cta__label">SEND A MESSAGE</span>
+          <span class="contact-cta__arrow">→</span>
+      </a>
+    </div>
+  </section>
+
+
 
 
 

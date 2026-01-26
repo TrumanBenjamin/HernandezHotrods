@@ -83,6 +83,45 @@
     }
   });
 })();
+
+// scroll cue for home page video
+(() => {
+  const btn = document.querySelector('.contact-cta');
+  if (!btn) return;
+
+  btn.addEventListener('mousemove', (e) => {
+    const r = btn.getBoundingClientRect();
+    const x = ((e.clientX - r.left) / r.width) * 100;
+    const y = ((e.clientY - r.top) / r.height) * 100;
+
+    btn.style.setProperty('--mx', `${x}%`);
+    btn.style.setProperty('--my', `${y}%`);
+  });
+})();
+
+(() => {
+  const cue = document.querySelector('.scroll-cue');
+  const target = document.querySelector('#homeContentStart');
+
+  if (!cue || !target) return;
+
+  // click -> smooth scroll to the next section
+  cue.addEventListener('click', () => {
+    target.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  });
+
+  // hide once user scrolls a little
+  const hideAt = 20; // px
+  const onScroll = () => {
+    if (window.scrollY > hideAt) cue.classList.add('is-hidden');
+    else cue.classList.remove('is-hidden');
+  };
+
+  onScroll();
+  window.addEventListener('scroll', onScroll, { passive: true });
+})();
+
+
 </script>
 </body>
 </html>

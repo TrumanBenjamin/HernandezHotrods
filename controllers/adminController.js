@@ -1,5 +1,6 @@
 
 const pool = require('../db');
+const bcrypt = require('bcrypt');
 
 async function getCurrentIgToken() {
   const { rows } = await pool.query(
@@ -38,10 +39,11 @@ exports.dashboard = async (req, res) => {
     const teamQ = pool.query(`
       SELECT id, name, role, photo_url, bio 
       FROM team
-      ORDER BY id DESC
+      ORDER BY sort_order ASC NULLS LAST, id ASC
     `).catch(() => ({ rows: [] }));
 
     const [buildsRes, forSaleRes, teamRes] = await Promise.all([buildsQ, forSaleQ, teamQ]);
+    
 
     res.render('admin/dashboard', {
       title: 'Admin',
@@ -109,6 +111,62 @@ exports.updateIgToken = async (req, res) => {
   } catch (err) {
     console.error('Error saving IG token:', err);
     res.status(500).send('Error saving Instagram token.');
+  }
+};
+
+// New Admin User
+
+exports.newUserForm = (req, res) => {
+  res.render('admin/newUser', {
+    title: 'Create User',
+    user: req.user,
+    message: null,
+    error: null
+  });
+};
+
+exports.createUser = async (req, res) => {
+  try {
+    const email = (req.body.email || '').trim().toLowerCase();
+    const pass  = (req.body.password || '').trim();
+    const name  = (req.body.name || '').trim();
+    const role  = 'admin';
+
+    if (!email || !pass || !name) {
+      return res.render('admin/newUser', {
+        title: 'Create User',
+        user: req.user,
+        message: null,
+        error: 'Email, password, and name are required.'
+      });
+    }
+
+    const hash = await bcrypt.hash(pass, 12);
+
+    await pool.query(
+      `INSERT INTO users (email, password_hash, role, name)
+       VALUES ($1, $2, $3, $4)
+       ON CONFLICT (email) DO UPDATE
+         SET password_hash = EXCLUDED.password_hash,
+             role = EXCLUDED.role,
+             name = EXCLUDED.name`,
+      [email, hash, role, name]
+    );
+
+    return res.render('admin/newUser', {
+      title: 'Create User',
+      user: req.user,
+      message: `User saved: ${email}`,
+      error: null
+    });
+  } catch (err) {
+    console.error('createUser error:', err);
+    return res.render('admin/newUser', {
+      title: 'Create User',
+      user: req.user,
+      message: null,
+      error: 'Failed to create user. Check server logs.'
+    });
   }
 };
 
