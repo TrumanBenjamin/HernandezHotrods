@@ -2,7 +2,7 @@ const { fetchInstagramPosts } = require('../services/instagram');
 
 exports.homePage = async (req, res) => {
   try {
-    const igPosts = await fetchInstagramPosts(3); // grab 4 posts
+    const igPosts = await fetchInstagramPosts(3); // grab 3 posts
     res.render('home', { 
       title: 'Home',
       isHome: true,

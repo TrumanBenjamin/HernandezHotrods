@@ -148,6 +148,14 @@
     }
   })();
 
+document.querySelector('.scroll-cue')
+  ?.addEventListener('click', () => {
+    window.scrollBy({
+      top: window.innerHeight * 1,
+      behavior: 'smooth'
+    });
+  });
+
 
 
 

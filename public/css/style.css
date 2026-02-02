@@ -762,6 +762,26 @@ button.btn-cta {
     inset 0 1px 0 rgba(255,255,255,0.04);
 }
 
+.ig-button {
+  text-decoration: none;
+  background: #833ab4;
+  color: #ffffff;
+  font-size: 24px;
+  font-family: "Bebas Neue", sans-serif;
+  padding: 10px 16px;
+  border-radius: 5px;
+  letter-spacing: 1.5px;
+  scale: 1;
+  transition: transform .2s ease, background .2s ease, box-shadow .2s ease;
+  will-change: transform, background, box-shadow;
+}
+.ig-button:hover {
+  background: #9c46d5;
+  transform: translateY(-2px);
+  box-shadow: 0px 0px 20px 4px rgb(120 4 182 / 52%);
+}
+
+
 /* mobile: make the card full-width and stack nicely */
 @media (max-width: 900px) {
   .cta-box {
@@ -1309,7 +1329,7 @@ button.btn-cta {
   background: transparent;
   cursor: pointer;
   transition: transform .06s ease;
-  margin: 20px 0;
+  margin: 10px 0 0;
   text-transform: uppercase;
   border: 0;
 }
@@ -2520,7 +2540,6 @@ body.is-home .nav-logo.visible {
 /* full-bleed container */
 .band{
   position: relative;
-  min-height: var(--band-height);
   display: grid;
   place-items: stretch;
   isolation: isolate;
@@ -2604,7 +2623,7 @@ body.is-home .nav-logo.visible {
   grid-template-areas: "media info";
   align-items: center;
   /* gap: 24px; */
-  height: 100%;
+  height: 650px;
   padding: 24px clamp(16px, 3vw, 70px);
 }
 
@@ -2631,7 +2650,7 @@ body.is-home .nav-logo.visible {
 
 /* info block */
 .band-info{
-  padding: clamp(16px, 7vw, 100px);
+  padding: clamp(16px, 7vw, 70px);
   /* border: 1px solid #141414; */
   /* box-shadow:
     0 16px 40px rgba(0,0,0,.45),
@@ -2645,8 +2664,8 @@ body.is-home .nav-logo.visible {
   flex-direction: column;
   align-items: center;   /* horizontal center */
   justify-content: center; /* vertical center */
-  gap: 41px;             /* space between title, text, and button */
-  min-height: 100%;
+  gap: 40px;             /* space between title, text, and button */
+  min-height: 0;
 }
 .band-info .btn-send {
   text-decoration: none;
@@ -2705,6 +2724,7 @@ body.is-home .nav-logo.visible {
   box-sizing: border-box;
   height: 100%;
   width: 100%;
+  min-height: 0;
 }
 
 .band--left .band-media {
@@ -3167,10 +3187,10 @@ body.is-home .nav-logo.visible {
   text-decoration: none;
 
   background: rgba(255, 255, 255, 0.03);
-  border: 1px solid rgba(255, 255, 255, 0.08);
+  border: 1px solid rgb(148 2 2 / 10%);
 
   box-shadow:
-    0 12px 28px rgba(0,0,0,0.55);
+    0 0 20px 5px rgb(14 0 0 / 92%);
 
   border-radius: 2px;
   position: relative;
@@ -3199,14 +3219,13 @@ body.is-home .nav-logo.visible {
 /* HOVER — glass + slight red warmth */
 .contact-cta:hover {
   background: rgba(181, 42, 42, 0.14);
-  border-color: rgba(181, 42, 42, 0.45);
 
   backdrop-filter: blur(6px);
   -webkit-backdrop-filter: blur(6px);
 
   box-shadow:
-    0 16px 38px rgba(0,0,0,0.65),
-    inset 0 0 0 1px rgba(255,255,255,0.05);
+    0px 0px 20px 0px rgb(209 4 4 / 23%), 
+    inset 0 0 0 1px rgba(255, 255, 255, 0.05);
 
   transform: translateY(-2px);
 }
@@ -3580,6 +3599,7 @@ html.is-ready .gallery-grid img.is-loaded {
   text-decoration: none;
   padding: 6px 5px;
   font-size: 24px;
+  border-radius: 4px;
 }
 
 @media (max-width: 768px) {
