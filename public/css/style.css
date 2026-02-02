@@ -117,6 +117,7 @@ footer {
   background: linear-gradient(to left, rgb(10 10 10) 0%, rgb(0 0 0 / 70%) 50%, rgb(10 10 10) 100%);
   box-shadow: -4px 4px 20px rgba(0, 0, 0, 0.3);
   transition: transform 0.3s ease-in-out;
+  backdrop-filter: blur(2px);
   /* border-bottom: 1px solid #141414; */
 }
 
