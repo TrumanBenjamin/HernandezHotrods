@@ -28,27 +28,27 @@
           <div class="gallery-grid no-global-img">
             <% item.photos.forEach(function (p, i) { %>
               <% if (i % 4 === 0) { %>
-                <section class="gallery-row"><!-- start row -->
+                <section class="gallery-row">
               <% } %>
 
               <figure class="gallery-item" data-animate>
-                <% const base = p.url; %>
+                <% const key = (p.url || "").replace(/^\/+/, ""); %>
                 <img
                   class="lazy"
-                  src="data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=="
-                  data-src="/img/800/70<%= base %>"
+                  src="data:image/gif;base64,R0lGODlhAQABAAAAACwAAAAAAQABAAA="
+                  data-src="/img/800/70/<%= key %>"
                   data-srcset="
-                    /img/400/65<%= base %> 400w,
-                    /img/800/70<%= base %> 800w,
-                    /img/1200/70<%= base %> 1200w,
-                    /img/1600/70<%= base %> 1600w"
+                    /img/400/65/<%= key %> 400w,
+                    /img/800/70/<%= key %> 800w,
+                    /img/1200/70/<%= key %> 1200w,
+                    /img/1600/70/<%= key %> 1600w
+                  "
                   sizes="(max-width: 600px) 100vw, (max-width: 1200px) 50vw, 25vw"
+                  data-full="/img/2000/80/<%= key %>"
                   alt="<%= p.alt || (item.title + ' photo') %>"
                   loading="lazy"
                   decoding="async"
-                  fetchpriority="low"
-                  data-lightbox="gallery"
-                  data-full="/img/2000/70<%= base %>">
+                />
               </figure>
 
               <% if (i % 4 === 3 || i === item.photos.length - 1) { %>

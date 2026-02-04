@@ -3,7 +3,7 @@
   <section class="hero home-hero" aria-label="Hero video with logo">
     <div class="hero-top">
       <video id="homeHeroVideo" class="hero-video" autoplay muted loop playsinline preload="metadata">
-        <source src="/media/chevelle.mp4" type="video/mp4" />
+        <source src="<%= R2_BASE %>/media/chevelle.mp4" type="video/mp4" />
       </video>
       <div class="hero-scrim" aria-hidden="true"></div>
 
@@ -12,7 +12,7 @@
         <img
           id="heroLogoBox"
           class="hero-logo"
-          src="/images/logo/hhrlogot-old.png"
+          src="<%= R2_BASE %>/images/logo/hhrlogot-old.png"
           alt="Hernandez Hot Rods & Customs"
         />
       </div>
@@ -42,7 +42,7 @@
   <div class="home-hero-spacer"></div>
 
     <div class="btp" id="homeContentStart">
-      <img src="/images/logo/builttoperform.png" alt="">
+      <img src="<%= R2_BASE %>/images/logo/builttoperform.png" alt="">
     </div>
   </section>
 
@@ -54,10 +54,11 @@
       <div class="band-info">
         <h2 class="band-title">About Us</h2>
         <p class="band-text">Located in Rexburg, ID...</p>
+        <p><!-- R2_BASE: <%= R2_BASE %> --></p>
       </div>
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/images/about-us.jpg" alt="About Hernandez Hot Rods" />
+          <img src="/img/1200/70/images/about-us.jpg" loading="lazy" decoding="async" alt="About Hernandez Hot Rods" />
         </div>
       </div>
     </div>
@@ -68,7 +69,7 @@
     <div class="band-inner" data-animate>
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/images/team.jpg" alt="Team" />
+          <img src="/img/1200/70/images/team.jpg" alt="Team" loading="lazy" decoding="async"/>
         </div>
       </div>  
       <div class="band-info">
@@ -153,7 +154,7 @@
       </div>
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/images/team.jpg" alt="Team" />
+          <img src="/img/1200/70/images/team.jpg" alt="Team" loading="lazy" decoding="async"/>
         </div>
       </div>  
     </div>
@@ -164,7 +165,7 @@
     <div class="band-inner">
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/images/tshirt.webp" alt="Team" />
+          <img src="<%= R2_BASE %>/images/tshirt.webp" alt="Team" />
         </div>
       </div>  
       <div class="band-info">
@@ -185,7 +186,7 @@
       </div>
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/images/tshirt.webp" alt="Team" />
+          <img src="/img/1200/80/images/tshirt.webp" alt="Team" loading="lazy" decoding="async"/>
         </div>
       </div>  
     </div>

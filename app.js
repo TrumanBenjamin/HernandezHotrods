@@ -5,6 +5,10 @@ require('dotenv').config();
 const expressLayouts = require('express-ejs-layouts');
 const sharp = require('sharp');
 const fs = require('fs/promises');
+const { S3Client, HeadObjectCommand, GetObjectCommand, PutObjectCommand } = require("@aws-sdk/client-s3");
+const { Readable } = require("stream");
+const publicRoot = path.join(__dirname, "public");
+
 
 // NEW: Auth/session deps
 const { Pool } = require('pg');                                  // NEW
@@ -13,6 +17,21 @@ const PgSession = require('connect-pg-simple')(session);         // NEW
 const passport = require('passport');                            // NEW
 const LocalStrategy = require('passport-local').Strategy;        // NEW
 const bcrypt = require('bcrypt');                                // NEW
+
+const r2 = new S3Client({
+  region: "auto",
+  endpoint: process.env.R2_ENDPOINT,
+  credentials: {
+    accessKeyId: process.env.R2_ACCESS_KEY_ID,
+    secretAccessKey: process.env.R2_SECRET_ACCESS_KEY,
+  },
+});
+
+async function streamToBuffer(body) {
+  const chunks = [];
+  for await (const chunk of body) chunks.push(chunk);
+  return Buffer.concat(chunks);
+}
 
 // Will use views/layout.ejs
 app.use(expressLayouts);
@@ -82,6 +101,12 @@ app.use((req, res, next) => {
   next();
 });
 
+app.use((req, res, next) => {
+  res.locals.R2_BASE = process.env.R2_PUBLIC_BASE_URL;
+  next();
+});
+
+
 // --- Your existing routes ---
 const staticRoutes = require('./routes/staticRoutes');
 app.use('/', staticRoutes);
@@ -116,65 +141,94 @@ app.use('/shop', shopRoutes);
 
 app.use('/', require('./routes/adminBuilds'));
 
-app.get('/img/:w/:q/*', async (req, res) => {
+app.get("/img/:w/:q/*", async (req, res) => {
   try {
-    const width = Math.max(1, Math.min(parseInt(req.params.w, 10) || 0, 3000)); // clamp 1..3000
-    const quality = Math.max(30, Math.min(parseInt(req.params.q, 10) || 0, 95)); // clamp 30..95
-    const relPath = req.params[0]; // original path after /img/w/q/
+    const width = Math.max(1, Math.min(parseInt(req.params.w, 10) || 0, 3000));
+    const quality = Math.max(30, Math.min(parseInt(req.params.q, 10) || 0, 95));
 
-    // Construct absolute path to original under /public
-    const srcAbs = path.join(__dirname, 'public', relPath);
-    const normalized = path.normalize(srcAbs);
-    const publicRoot = path.join(__dirname, 'public');
+    let relPath = decodeURIComponent(req.params[0] || "");
 
-    // Guard: must stay within /public
-    if (!normalized.startsWith(publicRoot)) return res.status(400).send('Bad path');
-
-    // Decide output format based on Accept header
-    const accept = req.headers['accept'] || '';
-    const toWebP = accept.includes('image/avif') || accept.includes('image/webp');
-
-    // Build cache path: /public/.cache/img/<w>_<q>_<hash-or-name>.(webp|jpg)
-    const cacheDir = path.join(publicRoot, '.cache', 'img');
-    await fs.mkdir(cacheDir, { recursive: true });
-
-    const baseName = relPath.replace(/[\\/]/g, '_'); // safe file name
-    const outExt = toWebP ? 'webp' : 'jpg';
-
-    // 👇 ADD THIS: version token changes whenever the source file changes
-    const st = await fs.stat(srcAbs);
-    const v = `${Math.floor(st.mtimeMs)}_${st.size}`; // stable + fast
-
-    const outName = `${width}_${quality}_${baseName}_${v}.${outExt}`;
-    const cacheAbs = path.join(cacheDir, outName);
-
-    // If cached file exists, stream it
-    try {
-      await fs.access(cacheAbs);
-      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
-      res.type(outExt);
-      return res.sendFile(cacheAbs);
-    } catch (_) {}
-
-    // Generate
-    let pipeline = sharp(srcAbs).rotate(); // auto-orient
-    if (width) pipeline = pipeline.resize({ width, withoutEnlargement: true });
-
-    if (toWebP) {
-      pipeline = pipeline.webp({ quality });
-    } else {
-      pipeline = pipeline.jpeg({ quality, mozjpeg: true });
+    // If someone accidentally passed a full URL, strip to pathname
+    if (relPath.startsWith("http://") || relPath.startsWith("https://")) {
+      try { relPath = new URL(relPath).pathname; } catch (_) {}
     }
 
-    const buf = await pipeline.toBuffer();
-    await fs.writeFile(cacheAbs, buf);
+    relPath = relPath.replace(/^\/+/, ""); // no leading slash
+    relPath = relPath.replace(/\\/g, "/"); // windows slashes -> url slashes
+    if (!relPath || relPath.includes("..")) return res.status(400).send("Bad path");
 
-    res.setHeader('Cache-Control', 'public, max-age=31536000, immutable');
+    // HEAD source object for cache-busting token
+    const head = await r2.send(new HeadObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: relPath,
+    }));
+
+    const etag = String(head.ETag || "").replace(/"/g, "");
+    const v = `${etag}_${head.ContentLength || 0}`;
+
+    const accept = req.headers["accept"] || "";
+    const toWebP = accept.includes("image/avif") || accept.includes("image/webp");
+
+
+    const baseName = relPath.replace(/[\\/]/g, "_");
+    const outExt = toWebP ? "webp" : "jpg";
+
+    const outName = `${width}_${quality}_${baseName}_${v}.${outExt}`;
+
+    // R2 cache key (resized outputs go here)
+    const r2CacheKey = `cache/img/${outName}`;
+
+    // 1) Try R2 resized-cache first (shared across everyone)
+    try {
+      const cachedObj = await r2.send(new GetObjectCommand({
+        Bucket: process.env.R2_BUCKET,
+        Key: r2CacheKey,
+      }));
+
+      const buf = await streamToBuffer(cachedObj.Body);
+
+      res.setHeader("X-IMG-SOURCE", "R2-CACHE");
+
+      res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
+      res.type(outExt);
+      return res.send(buf);
+    } catch (_) {
+      // miss -> continue
+    }
+
+    // 2) Fetch original from R2, resize, respond
+    const obj = await r2.send(new GetObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: relPath, // ✅ WAS "key" (undefined)
+    }));
+
+    const inputBuf = await streamToBuffer(obj.Body);
+
+    let pipeline = sharp(inputBuf).rotate();
+    if (width) pipeline = pipeline.resize({ width, withoutEnlargement: true });
+
+    pipeline = toWebP
+      ? pipeline.webp({ quality })
+      : pipeline.jpeg({ quality, mozjpeg: true });
+
+    const buf = await pipeline.toBuffer();
+
+    // ✅ IMPORTANT: write resized output back to R2 cache (shared across everyone)
+    await r2.send(new PutObjectCommand({
+      Bucket: process.env.R2_BUCKET,
+      Key: r2CacheKey,
+      Body: buf,
+      ContentType: toWebP ? "image/webp" : "image/jpeg",
+      CacheControl: "public, max-age=31536000, immutable",
+    }));
+
+    res.setHeader("X-IMG-SOURCE", "R2-ORIGIN-RESIZED");
+    res.setHeader("Cache-Control", "public, max-age=31536000, immutable");
     res.type(outExt);
-    res.send(buf);
+    return res.send(buf);
   } catch (err) {
-    console.error('img proxy error:', err);
-    res.status(404).end();
+    console.error("img proxy error:", err);
+    return res.status(404).end();
   }
 });
 

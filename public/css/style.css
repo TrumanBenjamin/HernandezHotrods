@@ -1618,11 +1618,11 @@ html { --sbw: calc(100vw - 100%); }  /* = scrollbar width */
 /*                  */
 /* Background Image */
 .build-tile.left .bg-image {
-  background-image: url('/images/c30.jpg');
+  background-image: url('/img/1600/70/images/c30.jpg');
 }
 
 .build-tile.right .bg-image {
-  background-image: url('/images/mustang.jpg');
+  background-image: url('/img/1600/70/images/mustang.jpg');
 }
 
 .build-tile .bg-image {
