@@ -512,6 +512,7 @@ if (homeHero && homeFadeTarget) {
   </svg></button>
           <button class="lightbox__btn lightbox__prev" aria-label="Previous (←)">‹</button>
           <img class="lightbox__img" alt="">
+          <div class="lightbox__spinner" hidden></div>
           <button class="lightbox__btn lightbox__next" aria-label="Next (→)">›</button>
           <div class="lightbox__counter" aria-live="polite"></div>
         </div>
@@ -523,6 +524,7 @@ if (homeHero && homeFadeTarget) {
       btnNext   = lb.querySelector('.lightbox__next');
       btnClose  = lb.querySelector('.lightbox__close');
       counterEl = lb.querySelector('.lightbox__counter');
+      lb.spinnerEl = lb.querySelector('.lightbox__spinner'); 
 
        // === START of new ZOOM / PAN code ===
 if (!lb.dataset.zoomBound) {
@@ -916,12 +918,27 @@ function zoomAt(clientX, clientY, targetScale) {
 
     
 
-    function show(i) {  
+    function show(i) {
       const item = group[i];
       if (!item) return;
+
       lb?.resetForNewImage?.();
+
+      // SHOW spinner immediately
+      if (lb.spinnerEl) lb.spinnerEl.hidden = false;
+
       imgEl.alt = item.alt;
-      imgEl.src = item.src;         // might be data-full or currentSrc
+
+      imgEl.onload = () => {
+        if (lb.spinnerEl) lb.spinnerEl.hidden = true;
+      };
+
+      imgEl.onerror = () => {
+        if (lb.spinnerEl) lb.spinnerEl.hidden = true;
+      };
+
+      imgEl.src = item.src; // ← unchanged
+
       counterEl.textContent = `${i + 1} / ${group.length}`;
     }
 
