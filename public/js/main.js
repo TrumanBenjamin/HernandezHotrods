@@ -924,17 +924,20 @@ function zoomAt(clientX, clientY, targetScale) {
 
       lb?.resetForNewImage?.();
 
-      // SHOW spinner immediately
-      if (lb.spinnerEl) lb.spinnerEl.hidden = false;
-
       imgEl.alt = item.alt;
 
+      if (!imgEl.complete) {
+        if (lb.spinnerEl) lb.spinnerEl.removeAttribute('hidden');
+        imgEl.style.opacity = '0';
+      }
+
       imgEl.onload = () => {
-        if (lb.spinnerEl) lb.spinnerEl.hidden = true;
+        imgEl.style.opacity = '1';
+        if (lb.spinnerEl) lb.spinnerEl.setAttribute('hidden', '');
       };
 
       imgEl.onerror = () => {
-        if (lb.spinnerEl) lb.spinnerEl.hidden = true;
+        if (lb.spinnerEl) lb.spinnerEl.setAttribute('hidden', '');
       };
 
       imgEl.src = item.src; // ← unchanged

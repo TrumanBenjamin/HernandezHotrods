@@ -1076,7 +1076,7 @@ button.btn-cta {
 }
 .contact-header .sub {
   color: #9aa3af;
-  font-size: clamp(14px, 1.5vw, 16px);
+  font-size: clamp(12px, 1.5vw, 16px);
   line-height: 1.5;
   max-width: 800px;
 }
@@ -2346,12 +2346,9 @@ body.is-home .nav-logo.visible {
   transform: translateY(10px);
   /* prevent the global img reveal from taking over */
   transition: none !important;
+  animation: heroLogoIn .8s cubic-bezier(.22,.61,.36,1) 0.1s forwards;
 }
 
-
-.home-hero .hero-logo.start {
-  animation: heroLogoIn .8s cubic-bezier(.22,.61,.36,1) 0s forwards;
-}
 
 @keyframes heroLogoIn {
   to { opacity: .7; transform: translateY(0); }
@@ -3550,7 +3547,7 @@ html.is-ready .gallery-grid img.is-loaded {
 .page.forSale .wip-heading {
   font-size: 42px;
   background: #2f343a;
-  box-shadow: inset 0 0 20px 0 rgba(0, 0, 0, .55);
+  box-shadow: inset 0 0 20px 0 rgba(0, 0, 0, .8);
   font-weight: 200;
   color: #c7c7c7;
   text-align: center;
@@ -3618,7 +3615,6 @@ html.is-ready .gallery-grid img.is-loaded {
   top: 0; bottom: 0;
   width: var(--fsd-cap-w);
   background: var(--fsd-cap);
-  box-shadow: inset 0 0 20px rgba(0, 0, 0, .55);
 
   /* fade to transparent on the OUTSIDE edge */
   -webkit-mask-image: linear-gradient(to var(--fade-dir), transparent 0, #000 32%);
@@ -4389,11 +4385,37 @@ body.gate-hover:not(.hover-ready) :is(
   opacity: 1;
   filter: none !important;
   will-change: transform,;
-  transition: transform .2s ease;
+  transition: transform .2s ease, opacity .25s ease;
   object-position: center;
   margin: auto;
   transform-origin: 50% 50%;
   /* transform-origin: 0 0 !important; */
+}
+
+.lightbox__spinner {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  background: rgba(0,0,0,.35);
+}
+
+.lightbox__spinner::after {
+  content: "";
+  width: 36px;
+  height: 36px;
+  border: 3px solid rgba(255,255,255,.25);
+  border-top-color: #f12c2c;
+  border-radius: 50%;
+  animation: spin .8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+.lightbox__spinner[hidden] {
+  display: none !important;
 }
 
 .lightbox__btn {
@@ -4698,14 +4720,16 @@ p.success {
   }
 
   .wip-heading {
-    font-size: 26px !important;
-    padding: 4px 30px 4px 10px
+    font-size: 22px !important;
+    padding: 4px 30px 4px 10px;
+    box-shadow: inset 0px 0px 10px 0px #000000 !important;
   }
   .wip-heading::after {
     width: 20px;
   }
   .wip-paragraph {
-    font-size: 18px;
+    font-size: 12px !important;
+    padding: 14px;
   }
 
   .page-team .builds-title-wrap {
@@ -4742,7 +4766,7 @@ p.success {
     gap: 10px !important;
   }
   .cta-heading {
-    font-size: 20px;
+    font-size: 20px !important;
     padding: 0 0px;
     text-align: left;
   }
@@ -4755,7 +4779,7 @@ p.success {
     border-radius: 3px;
   }
   .btn-cta > span {
-    font-size: 12px;
+    font-size: 12px !important;
   }
   .tick {
     font-size: 18px;
@@ -4792,13 +4816,13 @@ p.success {
   }
   .page.forSale .btn-send {
     margin: 0;
-    font-size: 16px !important;
+    font-size: 12px !important;
     padding: 2px 4px !important;
   }
   .forSaleContact h2 {
-    font-size: 16px !important;
+    font-size: 12px !important;
     padding: 0 26px! important;
-    text-align: justify;
+    text-align: center;
   }
   .nav-links .nav-account {
     right: 20px;
@@ -4942,7 +4966,7 @@ p.success {
 
 
   .info-inner ul {
-    font-size: 20px;
+    font-size: 13px;
   }
   .builds-completed .builds-title-wrap {
     width: auto;
@@ -4978,7 +5002,7 @@ p.success {
     gap: 20px;
   }
   .ticker__track .tick {
-    font-size: 12px;
+    font-size: 12px !important;
   }
   .tick::before, .ticker__track::after {
     height: 12px;
@@ -5022,6 +5046,18 @@ p.success {
   }
   .contact-header h1 {
     margin: 10px 0;
+  }
+  .builds-index .site-header::after {
+    content: none;
+  }
+  .info-inner ul {
+    font-size: 13px !important;
+  }
+  .block .media img {
+    min-height: 300px;
+  }
+  .block .info {
+    min-height: 300px;
   }
 
 }
@@ -5180,8 +5216,14 @@ p.success {
   .hero-logo {
     width: 50vw;
   }
+  .meta-box {
+    padding: 8px;
+  }
   .meta-box h2 {
-    font-size: 18px;
+    font-size: 14px;
+  }
+  .meta-box .cta {
+    font-size: 12px;
   }
 
   .btp img {
@@ -5209,12 +5251,15 @@ p.success {
     height: auto; */
   }
   .adtlPhotos {
-    font-size: 35px;
+    font-size: 30px;
     margin: 0;
   }
   .block .info-inner {
-    min-height: 300px;
+    min-height: 400px;
     max-height: 500px;
+  }
+  .info-inner ul {
+    font-size: 20px;
   }
   .block .info-inner h2 {
     height: 90px;
@@ -5267,6 +5312,38 @@ p.success {
   .page.forSale .wip-heading {
     font-size: 40px;
   }
+  .cta-heading {
+    font-size: 30px;
+  }
+  .btn-cta > span {
+    font-size: 14px;
+  }
+    .cta-ticker .ticker__track {
+    padding: 6px 0;
+  }
+  .ticker {
+    gap: 9px;
+  }
+  .ticker__track {
+    gap: 20px;
+  }
+  .ticker__track .tick {
+    font-size: 12px !important;
+  }
+  .tick::before, .ticker__track::after {
+    height: 12px;
+    width: 4px;
+    left: -13px;
+  }
+  .cta-ticker .ticker__track::after {
+    height: 12px;
+    width: 4px;
+    margin-left: -13px;
+  }
+  .more-info {
+    font-size: 13px;
+  }
+
 }
 
 
