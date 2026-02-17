@@ -13,8 +13,16 @@ const upload = multer({
     fileSize: 20 * 1024 * 1024 // 20MB per image (adjust)
   },
   fileFilter: (req, file, cb) => {
-    if (!file.mimetype.startsWith('image/')) return cb(null, false);
-    cb(null, true);
+    const ext = path.extname(file.originalname || '').toLowerCase();
+    const okExt = ['.jpg','.jpeg','.png','.webp','.heic','.heif'].includes(ext);
+
+    const okMime =
+      (file.mimetype && file.mimetype.startsWith('image/')) ||
+      file.mimetype === 'application/octet-stream';
+
+    if (okExt || okMime) return cb(null, true);
+
+    cb(new Error(`Unsupported upload type: ${file.mimetype} (${ext})`));
   }
 });
 

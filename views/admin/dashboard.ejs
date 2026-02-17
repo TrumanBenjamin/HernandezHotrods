@@ -299,10 +299,6 @@
             </label>
           </div>
 
-          <label>Description
-            <textarea name="subtitle" rows="5" placeholder="(no change)"></textarea>
-          </label>
-
           <!-- ---------- SPEC SECTIONS (append-only here) ---------- -->
           <fieldset class="specs">
             <legend>Engine &amp; Drivetrain — bullets</legend>
@@ -466,7 +462,7 @@
 
       <!-- Update For-Sale -->
       <div id="update-sale" class="panel stack gap-m">
-        <form action="/admin/for-sale/update" method="post" enctype="multipart/form-data" class="stack gap-m">
+        <form action="/admin/for-sale/update" id="for-sale-update" method="post" enctype="multipart/form-data" class="stack gap-m">
 
           <!-- choose item -->
           <label>
@@ -574,7 +570,7 @@
 
       <!-- UPDATE TEAM -->
       <form class="panel" id="update-team" action="/admin/team/update" method="post" enctype="multipart/form-data">
-        <div class="team-sorter">
+        <div class="team-sorter"> 
           <p class="hint">Drag to reorder team members (TOP TO BOTTOM)</p>
           <ul id="team-sort-list">
             <% (team || [])
@@ -600,7 +596,7 @@
         </label>
 
 
-
+      
         <div class="admin-grid">
           <label>Name <input name="name" placeholder="(no change)"></label>
           <label>Role/Title <input name="role" placeholder="(no change)"></label>
@@ -617,7 +613,7 @@
         <button type="submit" class="btn-red">Save Changes</button>
       </form>
 
-      <!-- DELETE TEAM-->
+
       <form class="panel" id="delete-team" action="/admin/team/delete" method="post" onsubmit="return confirmDelete(this)">
         <label>Select Member to Delete
           <select name="member_id" required>
@@ -630,6 +626,64 @@
       </form>
     </div>
   </section>
+
+  <div id="saving-overlay" class="saving-overlay" aria-hidden="true">
+    <div class="saving-card" role="status" aria-live="polite" aria-label="Saving">
+      <div class="saving-spinner"></div>
+      <div class="saving-text">Saving…</div>
+      <div class="saving-subtext">This can take a few seconds.</div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const overlay = document.getElementById('saving-overlay');
+      if (!overlay) return;
+
+      // Put every form id you want here:
+      const FORM_IDS = [
+        'completed-add',
+        'current-add',
+        'add-sale',
+        'completed-update',
+        'current-update',
+        'for-sale-update',
+      ];
+
+      const show = (text = 'Saving…', sub = 'This can take a few seconds.') => {
+        const t = overlay.querySelector('.saving-text');
+        const s = overlay.querySelector('.saving-subtext');
+        if (t) t.textContent = text;
+        if (s) s.textContent = sub;
+
+        overlay.classList.add('is-on');
+        overlay.setAttribute('aria-hidden', 'false');
+      };
+
+      const hide = () => {
+        overlay.classList.remove('is-on');
+        overlay.setAttribute('aria-hidden', 'true');
+      };
+
+      const bind = (form, label) => {
+        if (!form || form.__savingBound) return;
+        form.__savingBound = true;
+
+        form.addEventListener('submit', () => {
+          show(label, 'This can take a few seconds.');
+          const btn = form.querySelector('button[type="submit"], input[type="submit"]');
+          if (btn) btn.disabled = true;
+        });
+      };
+
+      // Bind by ids (easy + explicit)
+      for (const id of FORM_IDS) bind(document.getElementById(id), 'Saving…');
+
+      // If a user goes back/forward and the page is restored from bfcache
+      window.addEventListener('pageshow', hide);
+    })();
+  </script>
+
 
     <script>
     document.querySelectorAll('.admin-section').forEach(section => {
@@ -699,48 +753,46 @@
       // init
       show('current', 'add');
     })();
-    </script>
+    </script> 
 
     <script>
-      (function () {
-        const form = document.getElementById('completed-update');
-        if (!form) return;
+(function(){
+  const form = document.getElementById('completed-update');
+  if (!form) return;
 
-        // When you create rows for existing bullets, set data-orig once:
-        // input.setAttribute('data-orig', originalText);
+  // Add NEW bullet rows (unsaved)
+  form.querySelectorAll('.spec-add').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const key = btn.dataset.target;
+      const list = form.querySelector(`.spec-list[data-section="${key}"]`);
+      if (!list) return;
 
-        // Before submit, drop unchanged existing inputs from the payload
-        form.addEventListener('submit', () => {
-          const existingInputs = form.querySelectorAll('input[data-item-id][name^="sections_existing["]');
-          existingInputs.forEach(inp => {
-            const cur  = (inp.value || '').trim();
-            const orig = (inp.getAttribute('data-orig') || '').trim();
-            if (cur === orig) {
-              // Prevent unchanged items from being submitted
-              inp.setAttribute('data-skip', '1');
-              inp.removeAttribute('name');
-            }
-          });
-        });
+      const row = document.createElement('div');
+      row.className = 'spec-row';
+      row.innerHTML = `
+        <input name="sections[${key}][]" placeholder="Add bullet">
+        <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
+      `;
+      list.appendChild(row);
+    });
+  });
 
-        // Optional: if user edits then goes back to original, restore name (so new edits still submit)
-        form.addEventListener('input', (e) => {
-          const inp = e.target.closest('input[data-item-id]');
-          if (!inp) return;
-          const cur  = (inp.value || '').trim();
-          const orig = (inp.getAttribute('data-orig') || '').trim();
-          const sectionKey = inp.getAttribute('data-section'); // set this when you inject rows
-          const id = inp.dataset.itemId;
-          if (!id || !sectionKey) return;
+  // Remove NEW bullet rows only (existing ones are handled by big script)
+  form.addEventListener('click', (e) => {
+    const btn = e.target.closest('.spec-remove');
+    if (!btn) return;
 
-          if (cur !== orig) {
-            if (!inp.name) inp.name = `sections_existing[${sectionKey}][${id}]`;
-          } else {
-            if (inp.name) inp.removeAttribute('name');
-          }
-        });
-      })();
-    </script>
+    // If it's an EXISTING bullet, big script handles it (confirm + API delete)
+    if (btn.dataset.itemId) return;
+
+    // If the row contains an existing input, don't touch it here
+    if (btn.closest('.spec-row')?.querySelector('[data-item-id]')) return;
+
+    // New unsaved row: remove instantly
+    btn.closest('.spec-row')?.remove();
+  });
+})();
+</script>
 
     <script>
       (function(){
@@ -780,73 +832,7 @@
         });
       })();
       </script>
-      <script>
-      (function(){
-        const form = document.getElementById('completed-update');
-        if (!form) return;
-
-        // add bullet row
-        form.querySelectorAll('.spec-add').forEach(btn => {
-          btn.addEventListener('click', () => {
-            const key = btn.dataset.target;
-            const list = form.querySelector(`.spec-list[data-section="${key}"]`);
-            const row = document.createElement('div');
-            row.className = 'spec-row';
-            row.innerHTML = `
-              <input name="sections[${key}][]" placeholder="Add bullet">
-              <button type="button" class="spec-remove" aria-label="Remove item">&times;</button>
-            `;
-            list.appendChild(row);
-          });
-        });
-
-        // remove bullet row 
-        form.addEventListener('click', (e) => {
-          if (!e.target.classList.contains('spec-remove')) return;
-          const btn = e.target;
-          const row = btn.closest('.spec-row');
-          if (!row) return;
-
-          // If this row represents an EXISTING bullet (has an ID), let the
-          // other delete logic (with its confirm) handle it. Do nothing here.
-          if (btn.dataset.itemId || row.querySelector('[data-item-id]')) return;
-
-          // Brand-new unsaved row: remove immediately (allow zero rows)
-          row.remove();
-        });
-
-         // Before submit, drop unchanged existing inputs from the payload
-        form.addEventListener('submit', () => {
-          const existingInputs = form.querySelectorAll('input[data-item-id][name^="sections_existing["]');
-          existingInputs.forEach(inp => {
-            const cur  = (inp.value || '').trim();
-            const orig = (inp.getAttribute('data-orig') || '').trim();
-            if (cur === orig) {
-              // Prevent unchanged items from being submitted
-              inp.setAttribute('data-skip', '1');
-              inp.removeAttribute('name');
-            }
-          });
-        });
-
-        // Optional: if user edits then goes back to original, restore name (so new edits still submit)
-        form.addEventListener('input', (e) => {
-          const inp = e.target.closest('input[data-item-id]');
-          if (!inp) return;
-          const cur  = (inp.value || '').trim();
-          const orig = (inp.getAttribute('data-orig') || '').trim();
-          const sectionKey = inp.getAttribute('data-section'); // set this when you inject rows
-          const id = inp.dataset.itemId;
-          if (!id || !sectionKey) return;
-
-          if (cur !== orig) {
-            if (!inp.name) inp.name = `sections_existing[${sectionKey}][${id}]`;
-          } else {
-            if (inp.name) inp.removeAttribute('name');
-          }
-        });
-      })();
-      </script> 
+      
       <script>
 (function () {
   const sec = document.getElementById('sec-forsale');
@@ -1106,13 +1092,19 @@
 
   // If you already have a function that creates a new row (e.g. addSpecRow),
   // feel free to swap this out and call yours. This helper mirrors common markup:
-  function makeRow({ text = '', item_id = null }) {
+  function makeRow({ text = '', item_id = null, sectionKey = '' }) {
+    const safe = (text || '').replace(/"/g, '&quot;');
+
     const row = document.createElement('div');
     row.className = 'spec-row';
+
     row.innerHTML = `
       <input
+        class="js-existing-bullet"
         ${item_id ? `data-item-id="${item_id}"` : ''}
-        value="${(text || '').replace(/"/g, '&quot;')}"
+        ${item_id ? `data-orig="${safe}"` : ''}
+        ${sectionKey ? `data-section="${sectionKey}"` : ''}
+        value="${safe}"
       >
       <button type="button" class="spec-remove" ${item_id ? `data-item-id="${item_id}"` : ''}>&times;</button>
     `;
@@ -1152,7 +1144,7 @@
         const listEl = lists[key];
         const items = data.sections?.[key]?.items || [];
         items.forEach(it => {
-          const row = makeRow({ text: it.text, item_id: it.id });
+          const row = makeRow({ text: it.text, item_id: it.id, sectionKey: key });
           row.dataset.injected = '1';           // mark as injected (existing)
           listEl.appendChild(row);
         });
@@ -1170,31 +1162,6 @@
       });
     }
   }
-
-  // SAVE on explicit action (Ctrl+S on input or small save button you may add).
-  // If you prefer auto-save-on-blur, switch 'keydown' to 'blur' and remove the Ctrl+S check.
-  form.addEventListener('keydown', async (e) => {
-    if (e.key !== 's' || !e.ctrlKey) return;
-    const input = e.target.closest('input[data-item-id]');
-    if (!input) return;
-
-    e.preventDefault();
-    const id = input.dataset.itemId;
-    const fd = new FormData();
-    fd.append('item_id', id);
-    fd.append('text', input.value || '');
-
-    try {
-      const res = await fetch('/admin/builds/section-item/update', { method:'POST', body: fd });
-      if (!res.ok) throw new Error();
-      input.classList.add('saved');
-      setTimeout(() => input.classList.remove('saved'), 700);
-    } catch {
-      input.classList.add('error');
-      setTimeout(() => input.classList.remove('error'), 1000);
-      alert('Could not save. Try again.');
-    }
-  });
 
   // DELETE: if row has data-item-id, delete via API; if it’s a brand-new unsaved row, keep your existing remove behavior
   form.addEventListener('click', async (e) => {
@@ -1219,6 +1186,36 @@
       alert('Could not delete. Try again.');
     }
   });
+
+  form.addEventListener('submit', async (e) => {
+  // find existing bullets that changed
+  const changed = Array.from(form.querySelectorAll('input.js-existing-bullet[data-item-id]'))
+    .filter(inp => (inp.value || '').trim() !== (inp.dataset.orig || '').trim());
+
+  if (!changed.length) return; // nothing to update; let submit happen normally
+
+  e.preventDefault();
+
+  try {
+    for (const inp of changed) {
+      const fd = new FormData();
+      fd.append('item_id', inp.dataset.itemId);
+      fd.append('text', inp.value || '');
+
+      const res = await fetch('/admin/builds/section-item/update', { method: 'POST', body: fd });
+      if (!res.ok) throw new Error(await res.text());
+
+      // mark as saved so repeated submits don't re-update
+      inp.dataset.orig = (inp.value || '').trim();
+    }
+
+    // now let the normal form submit run (images + new bullets append-only)
+    form.submit();
+  } catch (err) {
+    console.error(err);
+    alert('Could not save bullet edits. Check console.');
+  }
+});
 
   // Load existing bullets when panel opens or when the build selection changes
   if (select?.value) loadExisting(select.value);

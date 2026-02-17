@@ -2,76 +2,39 @@ const express = require('express');
 const router = express.Router();
 
 const path = require('path');
-const fs = require('fs/promises');
+const r2 = require("../services/r2");
+const { uploadTmpAsJpegToKeyStrict } = require("../services/r2Uploads");
+const { deleteByUrlIfUploads } = require("../services/r2Uploads");
+const sharp = require("sharp");
+const fs = require("fs/promises");
+const { PutObjectCommand } = require("@aws-sdk/client-s3");
 
 const db = require('../db');
 const { ensureAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload'); // your multer config (upload.array(...))
 
-/* --------------------------------- helpers -------------------------------- */
+  /* --------------------------------- helpers -------------------------------- */
 
-function slugify(str) {
-  return String(str)
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, '-')
-    .replace(/(^-|-$)+/g, '')
-    .slice(0, 80);
-}
-
-async function ensureDir(dir) {
-  await fs.mkdir(dir, { recursive: true });
-}
-
-/**
- * Move uploaded files from tmp to public/uploads/builds/:buildId
- * and insert rows into build_photos (url [, alt] [, sort_order]).
- */
-async function persistPhotos(buildId, files) {
-  if (!files?.length) return;
-
-  const destDir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(buildId));
-  await ensureDir(destDir);
-
-  // Try to honor sort_order if your table has it
-  let nextSort = 1;
-  try {
-    const { rows } = await db.query(
-      'SELECT COALESCE(MAX(sort_order), 0) AS max FROM build_photos WHERE build_id = $1',
-      [buildId]
-    );
-    nextSort = Number(rows?.[0]?.max || 0) + 1;
-  } catch {
-    // table may not have sort_order — that's fine
+  function slugify(str) {
+    return String(str)
+      .toLowerCase()
+      .trim()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/(^-|-$)+/g, '')
+      .slice(0, 80);
   }
 
-  for (const f of files) {
-    const filename = f.originalname;
-    const destPath = path.join(destDir, filename);
-    await fs.rename(f.path, destPath);
-
-    const webPath = `/uploads/builds/${buildId}/${filename}`;
-
-    // Try insert with sort_order; if it errors, fall back to url-only
-    try {
-      await db.query(
-        `INSERT INTO build_photos (build_id, url, sort_order)
-         VALUES ($1, $2, $3)`,
-        [buildId, webPath, nextSort++]
-      );
-    } catch {
-      await db.query(
-        `INSERT INTO build_photos (build_id, url)
-         VALUES ($1, $2)`,
-        [buildId, webPath]
-      );
-    }
+  function makeUniqueName(base) {
+    // base: "hero" or "thumb"
+    const rand = Math.random().toString(16).slice(2, 10);
+    return `${base}-${Date.now()}-${rand}.jpg`;
   }
-}
+
+
 // ----------------- add current ---------------
 router.post(
   '/admin/builds/add',
-  ensureAuth, 
+  ensureAuth,
   upload.fields([
     { name: 'thumb_image', maxCount: 1 },
     { name: 'hero_image',  maxCount: 1 },
@@ -96,14 +59,16 @@ router.post(
       const { rows } = await client.query(insertBuild, [slug, name, subtitle, owner_name]);
       const buildId = rows[0].id;
 
-      const destDir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(buildId));
-      await ensureDir(destDir);
-
       const saveToBuildCol = async (file, filename, colName) => {
         if (!file) return;
-        const destPath = path.join(destDir, filename);
-        await fs.rename(file.path, destPath);
+
         const webPath = `/uploads/builds/${buildId}/${filename}`;
+        const r2Key = webPath.slice(1); // remove leading "/"
+
+        // Upload original (as strict JPEG) to R2 (overwrites same key if it already exists)
+        await uploadTmpAsJpegToKeyStrict(file.path, r2Key, file.originalname);
+
+        // Persist the URL in Postgres
         await client.query(
           `UPDATE builds SET ${colName} = $1, updated_at = NOW() WHERE id = $2`,
           [webPath, buildId]
@@ -111,25 +76,31 @@ router.post(
       };
 
       // save thumb/hero into builds table
-      await saveToBuildCol(req.files.thumb_image?.[0], 'thumb.jpg', 'thumb_image');
-      await saveToBuildCol(req.files.hero_image?.[0],  'hero.jpg',  'hero_image');
+      await saveToBuildCol(req.files.thumb_image?.[0], makeUniqueName('thumb'), 'thumb_image');
+      await saveToBuildCol(req.files.hero_image?.[0],  makeUniqueName('hero'),  'hero_image');
 
       // gallery photos start at 1.jpg
       let nextOrder = 1;
       if (req.files.photos?.length) {
         for (const f of req.files.photos) {
           const filename = `${nextOrder}.jpg`;
-          const destPath = path.join(destDir, filename);
-          await fs.rename(f.path, destPath);
 
           const webPath = `/uploads/builds/${buildId}/${filename}`;
+          const r2Key = webPath.slice(1);
+
+          // Upload original (as strict JPEG) to R2
+          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
+
+          // Insert DB row
           await client.query(
             `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
             [buildId, webPath, nextOrder]
           );
+
           nextOrder++;
         }
       }
+
       await client.query('COMMIT');
       res.redirect('/admin');
     } catch (err) {
@@ -145,7 +116,7 @@ router.post(
 
 router.post(
   '/admin/builds/update',
-  ensureAuth,   
+  ensureAuth,
   upload.fields([
     { name: 'thumb_image', maxCount: 1 },
     { name: 'hero_image',  maxCount: 1 },
@@ -169,6 +140,7 @@ router.post(
         return res.redirect('/admin');
       }
 
+      // update text fields
       const sets = [];
       const vals = [];
       let i = 1;
@@ -186,44 +158,64 @@ router.post(
         );
       }
 
-      const destDir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(build_id));
-      await ensureDir(destDir);
-
-      const replaceBuildColumn = async (file, filename, colName) => {
+      // Replace thumb/hero (upload originals to R2, overwrite same key)
+      const replaceBuildColumn = async (file, baseName, colName) => {
         if (!file) return;
-        const destPath = path.join(destDir, filename);
-        await fs.rename(file.path, destPath);
-        const webPath = `/uploads/builds/${build_id}/${filename}`;
 
-        await client.query(`DELETE FROM build_photos WHERE build_id=$1 AND url=$2`, [build_id, webPath]);
+        // read current url so we can delete it after updating
+        const { rows } = await client.query(
+          `SELECT ${colName} FROM builds WHERE id=$1`,
+          [build_id]
+        );
+        const oldUrl = rows[0]?.[colName] || null;
+
+        const filename = makeUniqueName(baseName);
+        const webPath = `/uploads/builds/${build_id}/${filename}`;
+        const r2Key = webPath.slice(1);
+
+        await uploadTmpAsJpegToKeyStrict(file.path, r2Key, file.originalname);
+
+        // keep your safety: ensure hero/thumb never live in build_photos
+        await client.query(
+          `DELETE FROM build_photos WHERE build_id=$1 AND url=$2`,
+          [build_id, webPath]
+        );
 
         await client.query(
-          `UPDATE builds SET ${colName} = $1, updated_at = NOW() WHERE id = $2`,
+          `UPDATE builds SET ${colName}=$1, updated_at=NOW() WHERE id=$2`,
           [webPath, build_id]
         );
+
+        // cleanup old object (best-effort)
+        if (oldUrl) {
+          try { await deleteByUrlIfUploads(oldUrl); } catch {}
+        }
       };
 
-      await replaceBuildColumn(req.files.thumb_image?.[0], 'thumb.jpg', 'thumb_image');
-      await replaceBuildColumn(req.files.hero_image?.[0],  'hero.jpg',  'hero_image');
+      await replaceBuildColumn(req.files.thumb_image?.[0], 'thumb', 'thumb_image');
+      await replaceBuildColumn(req.files.hero_image?.[0],  'hero',  'hero_image');
 
-      let nextOrder = 1;
+      // Append new gallery photos (start after max sort_order)
       const { rows: maxRows } = await client.query(
         `SELECT COALESCE(MAX(sort_order), 0) AS max FROM build_photos WHERE build_id=$1`,
         [build_id]
       );
-      nextOrder = Number(maxRows[0].max) + 1;
+      let nextOrder = Number(maxRows?.[0]?.max || 0) + 1;
 
       if (req.files.photos?.length) {
         for (const f of req.files.photos) {
           const filename = `${nextOrder}.jpg`;
-          const destPath = path.join(destDir, filename);
-          await fs.rename(f.path, destPath);
 
           const webPath = `/uploads/builds/${build_id}/${filename}`;
+          const r2Key = webPath.slice(1);
+
+          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname); 
+
           await client.query(
             `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
             [build_id, webPath, nextOrder]
           );
+
           nextOrder++;
         }
       }
@@ -240,14 +232,6 @@ router.post(
 );
 
 /* ---------------------------- DELETE (current) ---------------------------- */
-/**
- * POST /admin/builds/delete
- * Body:
- *  - build_id (required)
- *
- * Removes photos, section items/sections (if present), and the build itself.
- * Uses a transaction; adjust if you have ON DELETE CASCADE constraints.
- */
 router.post('/admin/builds/delete', ensureAuth, async (req, res, next) => {
   const { build_id } = req.body;
   if (!build_id) return res.redirect('/admin');
@@ -258,7 +242,7 @@ router.post('/admin/builds/delete', ensureAuth, async (req, res, next) => {
 
     // Ensure it's a CURRENT build
     const { rows: chk } = await client.query(
-      'SELECT id FROM builds WHERE id = $1 AND is_completed = FALSE',
+      'SELECT id, thumb_image, hero_image FROM builds WHERE id = $1 AND is_completed = FALSE',
       [build_id]
     );
     if (!chk.length) {
@@ -266,16 +250,50 @@ router.post('/admin/builds/delete', ensureAuth, async (req, res, next) => {
       return res.redirect('/admin');
     }
 
-    // Delete dependent rows first if no cascade
-    try { await client.query('DELETE FROM build_section_items WHERE section_id IN (SELECT id FROM build_sections WHERE build_id = $1)', [build_id]); } catch {}
-    try { await client.query('DELETE FROM build_sections WHERE build_id = $1', [build_id]); } catch {}
-    try { await client.query('DELETE FROM build_photos WHERE build_id = $1', [build_id]); } catch {}
+    // 1) Collect URLs to delete from R2
+    const urlsToDelete = [];
+    if (chk[0].thumb_image) urlsToDelete.push(chk[0].thumb_image);
+    if (chk[0].hero_image)  urlsToDelete.push(chk[0].hero_image);
 
-    await client.query('DELETE FROM builds WHERE id = $1', [build_id]);
+    const { rows: photoRows } = await client.query(
+      'SELECT url FROM build_photos WHERE build_id = $1',
+      [build_id]
+    );
+    for (const r of photoRows) {
+      if (r.url) urlsToDelete.push(r.url);
+    }
 
-    // Optionally remove uploaded folder from disk
-    const dir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(build_id));
-    try { await fs.rm(dir, { recursive: true, force: true }); } catch {}
+    // 2) Delete dependent rows
+    try {
+      await client.query(
+        'DELETE FROM build_section_items WHERE section_id IN (SELECT id FROM build_sections WHERE build_id = $1)',
+        [build_id]
+      );
+    } catch {}
+
+    try {
+      await client.query(
+        'DELETE FROM build_sections WHERE build_id = $1',
+        [build_id]
+      );
+    } catch {}
+
+    await client.query(
+      'DELETE FROM build_photos WHERE build_id = $1',
+      [build_id]
+    );
+
+    await client.query(
+      'DELETE FROM builds WHERE id = $1',
+      [build_id]
+    );
+
+    // 3) Delete originals from R2
+    for (const url of urlsToDelete) {
+      try {
+        await deleteByUrlIfUploads(url);
+      } catch {}
+    }
 
     await client.query('COMMIT');
     res.redirect('/admin');
@@ -329,39 +347,37 @@ router.post(
       );
       const buildId = buildRows[0].id;
 
-      // 2) Prepare destination folder
-      const destDir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(buildId));
-      await ensureDir(destDir);
-
-      // helper to save a fixed file and return its web path
+      // helper to upload a fixed file to R2 and return its web path
       const saveFixed = async (file, filename) => {
         if (!file) return null;
-        const destPath = path.join(destDir, filename);
-        await fs.rename(file.path, destPath);
-        return `/uploads/builds/${buildId}/${filename}`;
+
+        const webPath = `/uploads/builds/${buildId}/${filename}`;
+        const r2Key = webPath.slice(1);
+
+        await uploadTmpAsJpegToKeyStrict(file.path, r2Key, file.originalname);
+        return webPath;
       };
 
       // save thumb & hero, update the builds row
-      const thumbWeb = await saveFixed(req.files.thumb_image?.[0], 'thumb.jpg');
-      const heroWeb  = await saveFixed(req.files.hero_image?.[0],  'hero.jpg');
+      const thumbWeb = await saveFixed(req.files.thumb_image?.[0], makeUniqueName('thumb'));
+      const heroWeb  = await saveFixed(req.files.hero_image?.[0],  makeUniqueName('hero'));
 
       await client.query(
         `UPDATE builds
-        SET thumb_image = $1, hero_image = $2, updated_at = NOW()
-        WHERE id = $3`,
+         SET thumb_image = $1, hero_image = $2, updated_at = NOW()
+         WHERE id = $3`,
         [thumbWeb, heroWeb, buildId]
       );
 
-        // 3) Helper to rename an uploaded file and insert a photo row
-       const moveAndInsert = async (file, filename, altText, sortOrder) => {
+      // Helper to upload an image and insert a photo row
+      const uploadAndInsert = async (file, filename, altText, sortOrder) => {
         if (!file) return;
-        const destPath = path.join(destDir, filename);
-
-        // Ensure extension is .jpg in your store; if different, you can transcode later.
-        // For now we just rename to your convention, regardless of original extension.
-        await fs.rename(file.path, destPath);
 
         const webPath = `/uploads/builds/${buildId}/${filename}`;
+        const r2Key = webPath.slice(1);
+
+        await uploadTmpAsJpegToKeyStrict(file.path, r2Key, file.originalname);
+
         await client.query(
           `INSERT INTO build_photos (build_id, url, alt, sort_order)
            VALUES ($1,$2,$3,$4)`,
@@ -369,21 +385,23 @@ router.post(
         );
       };
 
-      // 4) Save the six “fixed” images with your exact names
-      await moveAndInsert(req.files.image_engine?.[0],   '1.jpg',     'Engine section',      1);
-      await moveAndInsert(req.files.image_chassis?.[0],  '2.jpg',     'Chassis section',     2);
-      await moveAndInsert(req.files.image_interior?.[0], '3.jpg',     'Interior section',    3);
-      await moveAndInsert(req.files.image_body?.[0],     '4.jpg',     'Body & Paint section',4);
+      // Save the fixed section images (exact names + sort orders)
+      await uploadAndInsert(req.files.image_engine?.[0],   '1.jpg', 'Engine section',       1);
+      await uploadAndInsert(req.files.image_chassis?.[0],  '2.jpg', 'Chassis section',      2);
+      await uploadAndInsert(req.files.image_interior?.[0], '3.jpg', 'Interior section',     3);
+      await uploadAndInsert(req.files.image_body?.[0],     '4.jpg', 'Body & Paint section', 4);
 
-      // 5) Additional photos start at 5.jpg
+      // Additional photos start at 5.jpg
       let nextOrder = 5;
       if (req.files.photos?.length) {
         for (const f of req.files.photos) {
           const filename = `${nextOrder}.jpg`;
-          const destPath = path.join(destDir, filename);
-          await fs.rename(f.path, destPath);
 
           const webPath = `/uploads/builds/${buildId}/${filename}`;
+          const r2Key = webPath.slice(1);
+
+          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
+
           await client.query(
             `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
             [buildId, webPath, nextOrder]
@@ -393,7 +411,7 @@ router.post(
         }
       }
 
-      // 6) Insert the four sections + bullet items (rows in build_sections + build_section_items)
+      // Insert the four sections + bullet items
       const SECTIONS = [
         { key: 'engine',   title: 'Engine & Drivetrain' },
         { key: 'chassis',  title: 'Chassis & Suspension' },
@@ -411,7 +429,10 @@ router.post(
         );
         const sectionId = secRes.rows[0].id;
 
-        const items = Array.isArray(sections[s.key]) ? sections[s.key] : (sections[s.key] ? [sections[s.key]] : []);
+        const items = Array.isArray(sections[s.key])
+          ? sections[s.key]
+          : (sections[s.key] ? [sections[s.key]] : []);
+
         const cleaned = items.map(t => String(t).trim()).filter(Boolean);
 
         for (let j = 0; j < cleaned.length; j++) {
@@ -454,7 +475,7 @@ router.post(
     const { build_id, owner_name, name, subtitle, sections = {} } = req.body;
     if (!build_id) return res.redirect('/admin');
 
-    const client = await db.connect(); // or db.pool.connect() if that's your interface
+    const client = await db.connect();
     try {
       await client.query('BEGIN');
 
@@ -485,40 +506,67 @@ router.post(
         );
       }
 
-      // Destination dir for files
-      const destDir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(build_id));
-      await ensureDir(destDir);
-
-      // --- Helpers ---
-      const saveReplaceBuildColumn = async (file, filename, column) => {
+      // --- Helpers (R2 originals, overwrite same key) ---
+      const saveReplaceBuildColumn = async (file, baseName, column) => {
         if (!file) return;
-        const destPath = path.join(destDir, filename);
-        await fs.rename(file.path, destPath);
+
+        // 1) read current value so we can delete it after updating
+        const { rows } = await client.query(
+          `SELECT ${column} FROM builds WHERE id = $1`,
+          [build_id]
+        );
+        const oldUrl = rows[0]?.[column] || null;
+
+        // 2) generate a unique destination for the new upload
+        const filename = makeUniqueName(baseName); // e.g. hero-<timestamp>-<rand>.jpg
         const webPath = `/uploads/builds/${build_id}/${filename}`;
-        // (optional) remove any legacy photo row that used to point at this URL
-        await client.query(`DELETE FROM build_photos WHERE build_id=$1 AND url=$2`, [build_id, webPath]);
+        const r2Key = webPath.slice(1);
+
+        // 3) upload to R2 (immutable key, no collisions)
+        await uploadTmpAsJpegToKeyStrict(file.path, r2Key, file.originalname);
+
+        // (optional) if anything ever pointed at this url in build_photos, clean it
+        await client.query(
+          `DELETE FROM build_photos WHERE build_id=$1 AND url=$2`,
+          [build_id, webPath]
+        );
+
+        // 4) update builds table to point at the new url
         await client.query(
           `UPDATE builds SET ${column} = $1, updated_at = NOW() WHERE id = $2`,
           [webPath, build_id]
         );
+
+        // 5) delete the previous object (best-effort)
+        if (oldUrl) {
+          try { await deleteByUrlIfUploads(oldUrl); } catch {}
+        }
       };
 
       const replaceFixedPhoto = async (file, filename, altText, sortOrder) => {
         if (!file) return;
-        const destPath = path.join(destDir, filename);
-        await fs.rename(file.path, destPath);
+
         const webPath = `/uploads/builds/${build_id}/${filename}`;
-        // replace existing DB row for that numbered slot
-        await client.query(`DELETE FROM build_photos WHERE build_id=$1 AND url=$2`, [build_id, webPath]);
+        const r2Key = webPath.slice(1);
+
+        await uploadTmpAsJpegToKeyStrict(file.path, r2Key, file.originalname);
+
+        // Ensure there is exactly one row for this slot (url)
         await client.query(
-          `INSERT INTO build_photos (build_id, url, alt, sort_order) VALUES ($1,$2,$3,$4)`,
+          `DELETE FROM build_photos WHERE build_id=$1 AND url=$2`,
+          [build_id, webPath]
+        );
+
+        await client.query(
+          `INSERT INTO build_photos (build_id, url, alt, sort_order)
+           VALUES ($1,$2,$3,$4)`,
           [build_id, webPath, altText || null, sortOrder]
         );
       };
 
       // 1) Replace thumb/hero -> update columns on builds
-      await saveReplaceBuildColumn(req.files.thumb_image?.[0], 'thumb.jpg', 'thumb_image');
-      await saveReplaceBuildColumn(req.files.hero_image?.[0],  'hero.jpg',  'hero_image');
+      await saveReplaceBuildColumn(req.files.thumb_image?.[0], 'thumb', 'thumb_image');
+      await saveReplaceBuildColumn(req.files.hero_image?.[0],  'hero',  'hero_image');
 
       // 2) Replace numbered section images in build_photos (1..4)
       await replaceFixedPhoto(req.files.image_engine?.[0],   '1.jpg', 'Engine section',   1);
@@ -527,21 +575,23 @@ router.post(
       await replaceFixedPhoto(req.files.image_body?.[0],     '4.jpg', 'Body & Paint',     4);
 
       // 3) Append extra photos (start at 5.jpg)
-      let nextOrder = 5;
       const { rows: maxRows } = await client.query(
         `SELECT COALESCE(MAX(sort_order), 4) AS max
            FROM build_photos
           WHERE build_id=$1 AND sort_order >= 5`,
         [build_id]
       );
-      nextOrder = Math.max(5, Number(maxRows[0].max) + 1);
+      let nextOrder = Math.max(5, Number(maxRows[0].max) + 1);
 
       if (req.files.photos?.length) {
         for (const f of req.files.photos) {
           const filename = `${nextOrder}.jpg`;
-          const destPath = path.join(destDir, filename);
-          await fs.rename(f.path, destPath);
+
           const webPath = `/uploads/builds/${build_id}/${filename}`;
+          const r2Key = webPath.slice(1);
+
+          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
+
           await client.query(
             `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
             [build_id, webPath, nextOrder]
@@ -571,7 +621,9 @@ router.post(
         let sectionId = secRows[0]?.id;
         if (!sectionId) {
           const { rows: ins } = await client.query(
-            `INSERT INTO build_sections (build_id, title, sort_order) VALUES ($1,$2,$3) RETURNING id`,
+            `INSERT INTO build_sections (build_id, title, sort_order)
+             VALUES ($1,$2,$3)
+             RETURNING id`,
             [build_id, s.title, s.sort]
           );
           sectionId = ins[0].id;
@@ -605,7 +657,6 @@ router.post(
 
 // ===== Completed build: section items API =====
 
-// Map section titles <-> keys once, so the client can stay key-based
 const SECTION_META = [
   { key: 'engine',   title: 'Engine & Drivetrain' },
   { key: 'chassis',  title: 'Chassis & Suspension' },
@@ -617,98 +668,123 @@ const SECTION_META = [
 router.get('/admin/builds/:id/sections', ensureAuth, async (req, res, next) => {
   try {
     const buildId = req.params.id;
-    // ensure it’s a completed build
+
     const ok = await db.query(
       'SELECT 1 FROM builds WHERE id=$1 AND is_completed=TRUE',
       [buildId]
     );
-    if (!ok.rows.length) return res.status(404).json({ ok:false, error:'Not found' });
+    if (!ok.rows.length) {
+      return res.status(404).json({ ok:false, error:'Not found' });
+    }
 
     const { rows: secs } = await db.query(
       'SELECT id, title, sort_order FROM build_sections WHERE build_id=$1 ORDER BY sort_order ASC',
       [buildId]
     );
+
     const secIds = secs.map(s => s.id);
     let items = [];
+
     if (secIds.length) {
       const { rows } = await db.query(
         `SELECT id, section_id, text, sort_order
-           FROM build_section_items
-          WHERE section_id = ANY($1::int[])
-          ORDER BY sort_order ASC`,
+         FROM build_section_items
+         WHERE section_id = ANY($1::int[])
+         ORDER BY sort_order ASC`,
         [secIds]
       );
       items = rows;
     }
 
-    // group by key (engine/chassis/…)
-    const byTitle = Object.fromEntries(SECTION_META.map(s => [s.title, s.key]));
+    const byTitle = Object.fromEntries(
+      SECTION_META.map(s => [s.title, s.key])
+    );
+
     const payload = {};
     for (const s of secs) {
-      const key = byTitle[s.title] || s.title; // fallback to title
+      const key = byTitle[s.title] || s.title;
       payload[key] = {
         section_id: s.id,
         title: s.title,
-        items: items.filter(i => i.section_id === s.id)
+        items: items.filter(i => i.section_id === s.id),
       };
     }
-    // ensure all four keys exist
+
     for (const m of SECTION_META) {
-      if (!payload[m.key]) payload[m.key] = { section_id: null, title: m.title, items: [] };
+      if (!payload[m.key]) {
+        payload[m.key] = { section_id: null, title: m.title, items: [] };
+      }
     }
+
     res.json({ ok:true, sections: payload });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
 // Update a single bullet’s text
 router.post('/admin/builds/section-item/update', ensureAuth, upload.none(), async (req, res, next) => {
   const { item_id, text } = req.body;
-  if (!item_id || typeof text !== 'string') return res.status(400).json({ ok:false, error:'Missing fields' });
+  if (!item_id || typeof text !== 'string') {
+    return res.status(400).json({ ok:false, error:'Missing fields' });
+  }
+
   try {
-    await db.query('UPDATE build_section_items SET text=$1 WHERE id=$2', [text.trim(), item_id]);
+    await db.query(
+      'UPDATE build_section_items SET text=$1 WHERE id=$2',
+      [text.trim(), item_id]
+    );
     res.json({ ok:true });
-  } catch (e) { next(e); }
+  } catch (e) {
+    next(e);
+  }
 });
 
-// Delete a single bullet (and compact sort_order within its section)
+// Delete a single bullet
 router.post('/admin/builds/section-item/delete', ensureAuth, upload.none(), async (req, res, next) => {
   const { item_id } = req.body;
-  if (!item_id) return res.status(400).json({ ok:false, error:'Missing item_id' });
+  if (!item_id) {
+    return res.status(400).json({ ok:false, error:'Missing item_id' });
+  }
+
   const client = await db.connect();
   try {
     await client.query('BEGIN');
+
     const { rows } = await client.query(
       'SELECT section_id, sort_order FROM build_section_items WHERE id=$1',
       [item_id]
     );
-    const row = rows[0];
-    if (!row) { await client.query('ROLLBACK'); return res.status(404).json({ ok:false, error:'Not found' }); }
+    if (!rows.length) {
+      await client.query('ROLLBACK');
+      return res.status(404).json({ ok:false, error:'Not found' });
+    }
 
-    await client.query('DELETE FROM build_section_items WHERE id=$1', [item_id]);
+    const { section_id, sort_order } = rows[0];
+
+    await client.query(
+      'DELETE FROM build_section_items WHERE id=$1',
+      [item_id]
+    );
+
     await client.query(
       'UPDATE build_section_items SET sort_order = sort_order - 1 WHERE section_id=$1 AND sort_order > $2',
-      [row.section_id, row.sort_order]
+      [section_id, sort_order]
     );
+
     await client.query('COMMIT');
     res.json({ ok:true });
   } catch (e) {
-    await client.query('ROLLBACK'); next(e);
-  } finally { client.release(); }
-}); 
-
-
-
+    await client.query('ROLLBACK');
+    next(e);
+  } finally {
+    client.release();
+  }
+});
 
 
 
 /* -------------------------- DELETE (completed) -------------------------- */
-/**
- * POST /admin/builds/delete-completed
- * Body: build_id (required)
- *
- * Removes photos, section items/sections, and the completed build itself.
- * Uses a transaction; adjust if you rely on ON DELETE CASCADE.
- */
 router.post('/admin/builds/delete-completed', ensureAuth, async (req, res, next) => {
   const { build_id } = req.body;
   if (!build_id) return res.redirect('/admin');
@@ -717,43 +793,60 @@ router.post('/admin/builds/delete-completed', ensureAuth, async (req, res, next)
   try {
     await client.query('BEGIN');
 
-    // Ensure it's a COMPLETED build
-    const { rows: chk } = await client.query(
-      'SELECT id FROM builds WHERE id = $1 AND is_completed = TRUE',
+    // Ensure it's a COMPLETED build + grab its thumb/hero urls
+    const { rows: buildRows } = await client.query(
+      `SELECT id, thumb_image, hero_image
+       FROM builds
+       WHERE id = $1 AND is_completed = TRUE`,
       [build_id]
     );
-    if (!chk.length) {
+
+    if (!buildRows.length) {
       await client.query('ROLLBACK');
       return res.redirect('/admin');
     }
 
-    // Delete dependent rows first (if you don't have CASCADE)
+    // Grab all build photo urls (includes 1.jpg..4.jpg + extras)
+    const { rows: photoRows } = await client.query(
+      `SELECT url
+       FROM build_photos
+       WHERE build_id = $1`,
+      [build_id]
+    );
+
+    // Build a unique list of urls to delete from R2 (/uploads/* only)
+    const urlsToDelete = new Set();
+    const b = buildRows[0];
+    if (b.thumb_image) urlsToDelete.add(b.thumb_image);
+    if (b.hero_image)  urlsToDelete.add(b.hero_image);
+    for (const p of photoRows) {
+      if (p.url) urlsToDelete.add(p.url);
+    }
+
+    // Delete objects in R2 first (so if something explodes, DB can rollback)
+    // deleteByUrlIfUploads ignores non-/uploads/ urls (so legacy /images/* won't be touched)
+    await Promise.allSettled(
+      [...urlsToDelete].map(u => deleteByUrlIfUploads(u))
+    );
+
+    // Delete dependent rows (your existing order is fine)
     try {
-      // Items -> Sections
       await client.query(
         'DELETE FROM build_section_items WHERE section_id IN (SELECT id FROM build_sections WHERE build_id = $1)',
         [build_id]
       );
     } catch {}
-    try {
-      await client.query('DELETE FROM build_sections WHERE build_id = $1', [build_id]);
-    } catch {}
-    try {
-      await client.query('DELETE FROM build_photos WHERE build_id = $1', [build_id]);
-    } catch {}
+    try { await client.query('DELETE FROM build_sections WHERE build_id = $1', [build_id]); } catch {}
+    try { await client.query('DELETE FROM build_photos WHERE build_id = $1', [build_id]); } catch {}
 
     // Finally delete the build
     await client.query('DELETE FROM builds WHERE id = $1', [build_id]);
 
-    // Remove uploaded folder from disk
-    const dir = path.join(__dirname, '..', 'public', 'uploads', 'builds', String(build_id));
-    try { await fs.rm(dir, { recursive: true, force: true }); } catch {}
-
     await client.query('COMMIT');
-    res.redirect('/admin');
+    return res.redirect('/admin');
   } catch (err) {
     await client.query('ROLLBACK');
-    next(err);
+    return next(err);
   } finally {
     client.release();
   }
