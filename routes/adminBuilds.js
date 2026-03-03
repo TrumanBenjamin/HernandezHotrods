@@ -39,16 +39,18 @@ const uploadLimiter = rateLimit({
     return `${base}-${Date.now()}-${rand}.jpg`;
   }
 
-  async function makeUniqueSlug(client, base) {
+  async function makeUniqueSlug(client, base, excludeId = null) {
     let slug = base;
     let i = 2;
 
-    // keep trying base, base-2, base-3... until free
     while (true) {
       const { rowCount } = await client.query(
-        'SELECT 1 FROM builds WHERE slug=$1 LIMIT 1',
-        [slug]
+        excludeId
+          ? 'SELECT 1 FROM builds WHERE slug=$1 AND id <> $2 LIMIT 1'
+          : 'SELECT 1 FROM builds WHERE slug=$1 LIMIT 1',
+        excludeId ? [slug, excludeId] : [slug]
       );
+
       if (rowCount === 0) return slug;
       slug = `${base}-${i++}`;
     }
@@ -188,8 +190,16 @@ router.post(
       let i = 1;
 
       if (owner_name) { sets.push(`owner_name = $${i++}`); vals.push(owner_name); }
-      if (name)       { sets.push(`name = $${i++}`);       vals.push(name);
-                        sets.push(`slug = $${i++}`);       vals.push(slugify(name)); }
+      if (name) {
+        sets.push(`name = $${i++}`); 
+        vals.push(name);
+
+        const baseSlug = slugify(name);
+        const uniqueSlug = await makeUniqueSlug(client, baseSlug, build_id);
+
+        sets.push(`slug = $${i++}`);
+        vals.push(uniqueSlug);
+      }
       if (subtitle)   { sets.push(`subtitle = $${i++}`);   vals.push(subtitle); }
 
       if (sets.length) {
@@ -536,8 +546,16 @@ router.post(
       const vals = [];
       let i = 1;
       if (owner_name) { sets.push(`owner_name = $${i++}`); vals.push(owner_name); }
-      if (name)       { sets.push(`name = $${i++}`);       vals.push(name);
-                        sets.push(`slug = $${i++}`);       vals.push(slugify(name)); }
+      if (name) {
+        sets.push(`name = $${i++}`);
+        vals.push(name);
+
+        const baseSlug = slugify(name);
+        const uniqueSlug = await makeUniqueSlug(client, baseSlug, build_id);
+
+        sets.push(`slug = $${i++}`);
+        vals.push(uniqueSlug);
+      }
       if (subtitle)   { sets.push(`subtitle = $${i++}`);   vals.push(subtitle); }
 
       if (sets.length) {

@@ -3901,8 +3901,9 @@ html.is-ready .gallery-grid img.is-loaded {
 
 /* Submit button */
 .login-box button[type="submit"] {
-  padding: 10px;
-  margin-top: 16px;
+  padding: 10px 40px;
+  margin: 16px auto 0;
+  width: max-content;
   border: none;
   border-radius: 6px;
   background: #c72828; /* your red accent */
@@ -3918,6 +3919,63 @@ html.is-ready .gallery-grid img.is-loaded {
   background: #922323;
   color: #ffffff;
 }
+
+
+
+/* New stuff */
+.login-page {
+  position: relative;
+  height: calc(100vh - 200px); /* keep your margin-top */
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  overflow: hidden;
+  background: #070707;
+}
+
+/* Spotlight + vignette */
+.login-page::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  background:
+    radial-gradient(900px 600px at 50% 35%, rgba(255,255,255,0.08), transparent 60%),
+    radial-gradient(1200px 900px at 50% 60%, rgba(255,255,255,0.04), transparent 65%),
+    radial-gradient(1400px 1000px at 50% 50%, rgba(0,0,0,0.25), rgba(0,0,0,0.92));
+  filter: blur(10px);
+}
+
+/* Subtle grain so it doesn't feel flat */
+.login-page::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 0;
+
+  background-image:
+    radial-gradient(circle, rgba(255,255,255,0.035) 1px, transparent 1px);
+  background-size: 3px 3px;
+  opacity: 0.10;
+  mix-blend-mode: overlay;
+}
+
+/* Keep the login card above the background */
+.login-box {
+  position: relative;
+  z-index: 1;
+  background: rgba(3, 3, 3, 0.9);
+  border: 1px solid rgba(255,255,255,0.06);
+  box-shadow: 0 25px 80px rgba(0,0,0,0.75);
+  backdrop-filter: blur(8px);
+}
+/* End of new stuff */
+
+
+
 
 /* end of login.ejs */
 

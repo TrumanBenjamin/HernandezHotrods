@@ -15,7 +15,7 @@ async function canSend(key) {
 
   if (!rows.length) return true;
 
-  const last = new Date(rows[0].last_sent_at).getTime();
+  const last = new Date(rows[0].last_sent_at).getTime(); 
   return Date.now() - last > ONE_DAY_MS;
 }
 
@@ -78,13 +78,46 @@ async function runIgTokenMonitor() {
     try {
       data = await debugToken(token);
     } catch (err) {
-      console.log("[IG MONITOR] ❌ Token check failed");
-      return;
+    console.log("[IG MONITOR] ❌ Token check failed", err?.message || err);
+
+    const key = "ig_token_check_failed";
+    if (await canSend(key)) {
+        await sendAlert({
+        subject: "HHR IG TOKEN CHECK FAILED",
+        text:
+    `Instagram token check failed.
+
+    Time: ${new Date().toLocaleString()}
+    Error: ${err?.message || err}
+    `,
+        });
+        await markSent(key);
+    }
+
+    return;
     }
 
     if (!data?.is_valid) {
-      console.log("[IG MONITOR] ❌ Token invalid");
-      return;
+    console.log("[IG MONITOR] ❌ Token invalid");
+
+    const key = "ig_token_invalid";
+    if (await canSend(key)) {
+        await sendAlert({
+        subject: "HHR IG TOKEN INVALID",
+        text:
+    `Instagram token is INVALID.
+
+    Time: ${new Date().toLocaleString()}
+    App ID: ${process.env.META_APP_ID || "unknown"}
+    Token type: ${data?.type || "unknown"}
+    Expires at: ${fmt(data?.expires_at)}
+    Data: ${JSON.stringify(data)}
+    `,
+        });
+        await markSent(key);
+    }
+
+    return;
     }
 
     console.log("[IG MONITOR] ✅ Token valid");
