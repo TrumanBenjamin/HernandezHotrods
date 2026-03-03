@@ -13,6 +13,33 @@ function streamToBuffer(stream) {
   });
 }
 
+function toR2KeyFromWildcardParam(star) {
+  if (!star) return null;
+
+  // Express wildcard can include leading slashes depending on how it’s captured
+  let s = String(star).trim();
+
+  // remove query/hash if they somehow got in
+  s = s.split("?")[0].split("#")[0];
+
+  // if a full URL got passed, extract pathname
+  if (s.startsWith("http://") || s.startsWith("https://")) {
+    try {
+      s = new URL(s).pathname;
+    } catch {
+      return null;
+    }
+  }
+
+  // ensure no leading slash
+  if (s.startsWith("/")) s = s.slice(1);
+
+  // only allow your image roots (adjust if you use others)
+  if (!(s.startsWith("uploads/") || s.startsWith("cache/"))) return null;
+
+  return s;
+}
+
 router.get("/img/:w/:q/*", async (req, res) => {
   try {
     const width = Math.max(1, Math.min(parseInt(req.params.w, 10) || 0, 3000));
@@ -69,7 +96,6 @@ router.get("/img/:w/:q/*", async (req, res) => {
     }
 
     // 2) Fetch original from R2, resize, respond
-    console.log("IMG ORIGINAL KEY:", JSON.stringify(relPath));
     const obj = await r2.send(new GetObjectCommand({
       Bucket: process.env.R2_BUCKET,
       Key: relPath, // ✅ WAS "key" (undefined)

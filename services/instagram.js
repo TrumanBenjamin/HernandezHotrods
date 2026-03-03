@@ -1,5 +1,5 @@
 // services/instagram.js
-const TTL = Number(process.env.IG_CACHE_TTL_SECONDS || 600); // 10 min
+const TTL = Number(process.env.IG_CACHE_TTL_SECONDS || 600);
 let cache = { data: null, ts: 0 };
 
 const pool = require('../db');

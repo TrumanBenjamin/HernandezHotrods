@@ -52,13 +52,16 @@
   <section class="band band--left band--first">
     <div class="band-inner">
       <div class="band-info">
-        <h2 class="band-title">About Us</h2>
-        <p class="band-text">Located in Rexburg, ID...</p>
+        <h2 class="band-title"><br>About Us</h2>
+        <p class="band-text">Founded in 2018, Hernandez Hot Rods & Customs is a Rexburg, Idaho–based shop specializing in complete, 
+          ground-up builds. <br><br> We strip vehicles down to the frame and build them back up with modern performance, custom metal fabrication, and 
+          attention to detail in every aspect. The goal is simple: create something that looks incredible, drives the way it should, and holds up 
+          for years to come. <br><br> At Hernandez Hot Rods & Customs, we believe in doing it right — no shortcuts, no halfway work.</p>
         <p><!-- R2_BASE: <%= R2_BASE %> --></p>
       </div>
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/img/1200/70/images/about-us.jpg" loading="lazy" decoding="async" alt="About Hernandez Hot Rods" />
+          <img src="/img/1200/70/images/Screenshot_20260224_100550_Photos.jpg" loading="lazy" decoding="async" alt="About Hernandez Hot Rods" />
         </div>
       </div>
     </div>
@@ -69,7 +72,7 @@
     <div class="band-inner" data-animate>
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/img/1200/80/images/tshirt.webp" alt="Team" loading="lazy" decoding="async"/>
+          <img src="/img/1200/80/images/20240815_103042.jpg" alt="Team" loading="lazy" decoding="async"/>
         </div>
       </div>  
       <div class="band-info">
@@ -92,9 +95,9 @@
 
       <div class="social-grid" data-animate>
         <% (igPosts || []).forEach(p => { 
-            let fullCap = (p.caption || '').replace(/\s+/g, ' ').trim();
+            let fullCap = (p.caption || '').replace(/\s+/g, ' ').trim(); 
 
-            const maxChars = 260; // tweak if you want more/less text
+            const maxChars = 260;
 
             if (fullCap.length > maxChars) {
               const cutAt = fullCap.lastIndexOf(' ', maxChars);
@@ -144,37 +147,40 @@
     </div>
   </section>
 
-    <!-- Band A: color left, info left -->
+
   <section class="band band--left" data-animate>
+    <div class="band-inner">
+      <div class="band-media">
+        <div class="band-media-inner">
+          <img src="/img/1200/80/images/20220706_201218.jpg" alt="Team" />
+        </div>
+      </div>  
+      <div class="band-info">
+        <h2 class="band-title">Vehicles For Sale</h2>
+        <p class="band-text">Built with purpose. Ready for the road.</p>
+        <a href="/forSale" class="btn-send"><span>View Vehicles</span></a>
+      </div>
+    </div>
+  </section>  
+
+  <section class="band band--right" data-animate>
     <div class="band-inner">
       <div class="band-info">
         <h2 class="band-title">Meet Our Team</h2>
-        <p class="band-text">In this industry, the team matters most.</p>
+        <p class="band-text">Behind every build is a team that cares about the details most people never see —
+          and that’s what sets the standard here at Hernandez Hot Rods & Customs.</p>
         <a href="/team" class="btn-send"><span>View Team</span></a>
       </div>
       <div class="band-media">
         <div class="band-media-inner">
-          <img src="/img/1200/80/images/tshirt.webp" alt="Team" loading="lazy" decoding="async"/>
+          <img src="/img/1200/80/images/Screenshot 2025-06-30 at 12.51.18 PM.png" alt="Team" loading="lazy" decoding="async"/>
         </div>
       </div>  
     </div>
   </section>
 
-  <!-- Band B: color right, info right -->
-  <section class="band band--right" data-animate>
-    <div class="band-inner">
-      <div class="band-media">
-        <div class="band-media-inner">
-          <img src="/img/1200/80/images/tshirt.webp" alt="Team" />
-        </div>
-      </div>  
-      <div class="band-info">
-        <h2 class="band-title">Vehicles For Sale</h2>
-        <p class="band-text">Looking for a new whip?</p>
-        <a href="/forSale" class="btn-send"><span>View Vehicles</span></a>
-      </div>
-    </div>
-  </section>
+  
+
 
   <!-- This section commented out, to be added later when merchandise is added -->
   <!-- <section class="band band--left" data-animate>
@@ -192,10 +198,12 @@
     </div>
   </section> -->
 
+
+
   <section class="home-contact" data-animate>
     <div class="home-contact-box">
-      <h2>TALK TO THE TEAM</h2>
-      <p>We’re happy to answer questions or discuss your next build.</p>
+      <h2>READY TO START <br> YOUR BUILD?</h2>
+      <p>Your build starts here. <br> Let's make it happen.</p>
 
       <a href="/contact" class="contact-cta">
           <span class="cta-spotlight"></span>

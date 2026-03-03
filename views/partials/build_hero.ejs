@@ -20,5 +20,7 @@
 <div class="hero-placeholder"></div>
 <div class="build-title-sticky">
   <% const firstName = build.owner_name?.split(' ')[0]; %>
-  <%= firstName %><%= firstName?.endsWith('s') ? "'" : "'s" %> <%= build.name %>
+  <% if (firstName) { %>
+  <%= firstName %><%= firstName.endsWith('s') ? "'" : "'s" %> <% } %>
+  <%= build.name %>
 </div>

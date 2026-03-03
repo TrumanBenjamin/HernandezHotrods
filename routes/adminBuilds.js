@@ -13,6 +13,15 @@ const db = require('../db');
 const { ensureAuth } = require('../middleware/auth');
 const upload = require('../middleware/upload'); // your multer config (upload.array(...))
 
+const rateLimit = require("express-rate-limit");
+
+const uploadLimiter = rateLimit({
+  windowMs: 10 * 60 * 1000,
+  max: 30,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+
   /* --------------------------------- helpers -------------------------------- */
 
   function slugify(str) {
@@ -30,11 +39,45 @@ const upload = require('../middleware/upload'); // your multer config (upload.ar
     return `${base}-${Date.now()}-${rand}.jpg`;
   }
 
+  async function makeUniqueSlug(client, base) {
+    let slug = base;
+    let i = 2;
+
+    // keep trying base, base-2, base-3... until free
+    while (true) {
+      const { rowCount } = await client.query(
+        'SELECT 1 FROM builds WHERE slug=$1 LIMIT 1',
+        [slug]
+      );
+      if (rowCount === 0) return slug;
+      slug = `${base}-${i++}`;
+    }
+  }
+
+  async function runPool(items, limit, worker) {
+    const executing = new Set();
+    const results = [];
+
+    for (const item of items) {
+      const p = Promise.resolve().then(() => worker(item));
+      results.push(p);
+      executing.add(p);
+      p.finally(() => executing.delete(p));
+
+      if (executing.size >= limit) {
+        await Promise.race(executing);
+      }
+    }
+
+    return Promise.all(results);
+  }
+
 
 // ----------------- add current ---------------
 router.post(
   '/admin/builds/add',
   ensureAuth,
+  uploadLimiter,
   upload.fields([
     { name: 'thumb_image', maxCount: 1 },
     { name: 'hero_image',  maxCount: 1 },
@@ -42,21 +85,22 @@ router.post(
   ]),
   async (req, res, next) => {
     const { owner_name, name, subtitle } = req.body;
-    if (!owner_name || !name || !subtitle) return res.redirect('/admin');
+    if (!name || !subtitle) return res.redirect('/admin');
 
-    const slug = slugify(name);
+    const ownerName = String(owner_name || '').trim() || null;
+    const baseSlug = slugify(name);
     const client = await db.connect();
 
     try {
       await client.query('BEGIN');
-
+      const slug = await makeUniqueSlug(client, baseSlug);
       // 1) Insert build
       const insertBuild = `
         INSERT INTO builds (slug, name, subtitle, owner_name, is_published, is_completed)
         VALUES ($1,$2,$3,$4,TRUE,FALSE)
         RETURNING id
       `;
-      const { rows } = await client.query(insertBuild, [slug, name, subtitle, owner_name]);
+      const { rows } = await client.query(insertBuild, [slug, name, subtitle, ownerName]);
       const buildId = rows[0].id;
 
       const saveToBuildCol = async (file, filename, colName) => {
@@ -81,25 +125,22 @@ router.post(
 
       // gallery photos start at 1.jpg
       let nextOrder = 1;
-      if (req.files.photos?.length) {
-        for (const f of req.files.photos) {
-          const filename = `${nextOrder}.jpg`;
+        if (req.files.photos?.length) {
+          const filesWithOrder = req.files.photos.map(f => ({ f, order: nextOrder++ }));
 
-          const webPath = `/uploads/builds/${buildId}/${filename}`;
-          const r2Key = webPath.slice(1);
+          await runPool(filesWithOrder, 4, async ({ f, order }) => {
+            const filename = `${order}.jpg`;
+            const webPath = `/uploads/builds/${buildId}/${filename}`;
+            const r2Key = webPath.slice(1);
 
-          // Upload original (as strict JPEG) to R2
-          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
+            await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
 
-          // Insert DB row
-          await client.query(
-            `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
-            [buildId, webPath, nextOrder]
-          );
-
-          nextOrder++;
+            await client.query(
+              `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
+              [buildId, webPath, order]
+            );
+          });
         }
-      }
 
       await client.query('COMMIT');
       res.redirect('/admin');
@@ -117,6 +158,7 @@ router.post(
 router.post(
   '/admin/builds/update',
   ensureAuth,
+  uploadLimiter,
   upload.fields([
     { name: 'thumb_image', maxCount: 1 },
     { name: 'hero_image',  maxCount: 1 },
@@ -201,24 +243,22 @@ router.post(
         [build_id]
       );
       let nextOrder = Number(maxRows?.[0]?.max || 0) + 1;
+        if (req.files.photos?.length) {
+          const filesWithOrder = req.files.photos.map(f => ({ f, order: nextOrder++ }));
 
-      if (req.files.photos?.length) {
-        for (const f of req.files.photos) {
-          const filename = `${nextOrder}.jpg`;
+          await runPool(filesWithOrder, 4, async ({ f, order }) => {
+            const filename = `${order}.jpg`;
+            const webPath = `/uploads/builds/${build_id}/${filename}`;
+            const r2Key = webPath.slice(1);
 
-          const webPath = `/uploads/builds/${build_id}/${filename}`;
-          const r2Key = webPath.slice(1);
+            await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
 
-          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname); 
-
-          await client.query(
-            `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
-            [build_id, webPath, nextOrder]
-          );
-
-          nextOrder++;
+            await client.query(
+              `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
+              [build_id, webPath, order]
+            );
+          });
         }
-      }
 
       await client.query('COMMIT');
       res.redirect('/admin');
@@ -319,6 +359,7 @@ router.post('/admin/builds/delete', ensureAuth, async (req, res, next) => {
 router.post(
   '/admin/builds/add-completed',
   ensureAuth,
+  uploadLimiter,
   upload.fields([
     { name: 'thumb_image',    maxCount: 1 },
     { name: 'hero_image',     maxCount: 1 },
@@ -330,20 +371,21 @@ router.post(
   ]),
   async (req, res, next) => {
     const { owner_name, name, subtitle = '', sections = {} } = req.body;
-    if (!owner_name || !name) return res.redirect('/admin');
+    if (!name) return res.redirect('/admin');
+    const ownerName = String(owner_name || '').trim() || null;
 
-    const slug = slugify(name);
+    const baseSlug = slugify(name);
 
     const client = await db.connect();
     try {
       await client.query('BEGIN');
-
+      const slug = await makeUniqueSlug(client, baseSlug);
       // 1) Create the build
       const { rows: buildRows } = await client.query(
         `INSERT INTO builds (slug, name, subtitle, owner_name, is_published, is_completed)
          VALUES ($1,$2,$3,$4,TRUE,TRUE)
          RETURNING id`,
-        [slug, name, subtitle, owner_name]
+        [slug, name, subtitle, ownerName] 
       );
       const buildId = buildRows[0].id;
 
@@ -393,23 +435,22 @@ router.post(
 
       // Additional photos start at 5.jpg
       let nextOrder = 5;
-      if (req.files.photos?.length) {
-        for (const f of req.files.photos) {
-          const filename = `${nextOrder}.jpg`;
+        if (req.files.photos?.length) {
+          const filesWithOrder = req.files.photos.map(f => ({ f, order: nextOrder++ }));
 
-          const webPath = `/uploads/builds/${buildId}/${filename}`;
-          const r2Key = webPath.slice(1);
+          await runPool(filesWithOrder, 4, async ({ f, order }) => {
+            const filename = `${order}.jpg`;
+            const webPath = `/uploads/builds/${buildId}/${filename}`;
+            const r2Key = webPath.slice(1);
 
-          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
+            await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
 
-          await client.query(
-            `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
-            [buildId, webPath, nextOrder]
-          );
-
-          nextOrder++;
+            await client.query(
+              `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
+              [buildId, webPath, order]
+            );
+          });
         }
-      }
 
       // Insert the four sections + bullet items
       const SECTIONS = [
@@ -470,6 +511,7 @@ const completedFields = [
 router.post(
   '/admin/builds/update-completed',
   ensureAuth,
+  uploadLimiter,
   upload.fields(completedFields),
   async (req, res, next) => {
     const { build_id, owner_name, name, subtitle, sections = {} } = req.body;
@@ -582,23 +624,22 @@ router.post(
         [build_id]
       );
       let nextOrder = Math.max(5, Number(maxRows[0].max) + 1);
+        if (req.files.photos?.length) {
+          const filesWithOrder = req.files.photos.map(f => ({ f, order: nextOrder++ }));
 
-      if (req.files.photos?.length) {
-        for (const f of req.files.photos) {
-          const filename = `${nextOrder}.jpg`;
+          await runPool(filesWithOrder, 4, async ({ f, order }) => {
+            const filename = `${order}.jpg`;
+            const webPath = `/uploads/builds/${build_id}/${filename}`;
+            const r2Key = webPath.slice(1);
 
-          const webPath = `/uploads/builds/${build_id}/${filename}`;
-          const r2Key = webPath.slice(1);
+            await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
 
-          await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
-
-          await client.query(
-            `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
-            [build_id, webPath, nextOrder]
-          );
-          nextOrder++;
+            await client.query(
+              `INSERT INTO build_photos (build_id, url, sort_order) VALUES ($1,$2,$3)`,
+              [build_id, webPath, order]
+            );
+          });
         }
-      }
 
       // 4) Append new bullets to sections (create section if missing)
       const META = [
@@ -854,20 +895,23 @@ router.post('/admin/builds/delete-completed', ensureAuth, async (req, res, next)
 
 // ---------------- Add For Sale ------------------- //
 
-// Save photos to /public/uploads/for-sale/<item_id>/ and INSERT rows
+function makeUniqueSalePhotoName(sortOrder = 1) {
+  const rand = Math.random().toString(16).slice(2, 10);
+  return `${sortOrder}-${Date.now()}-${rand}.jpg`;
+}
+
+// Save photos to R2 under /uploads/for-sale/<item_id>/ and INSERT rows
 async function saveForSalePhotos(client, itemId, files) {
   if (!files || !files.length) return;
-
-  const dir = path.join(__dirname, '..', 'public', 'uploads', 'for-sale', String(itemId));
-  await fs.mkdir(dir, { recursive: true });
 
   // keep order of upload as sort_order 1..n
   for (let i = 0; i < files.length; i++) {
     const f = files[i];
-    const dest = path.join(dir, f.originalname);
-    await fs.rename(f.path, dest);
+    const filename = makeUniqueSalePhotoName(i + 1);
+    const url = `/uploads/for-sale/${itemId}/${filename}`;
+    const key = url.slice(1);
 
-    const url = `/uploads/for-sale/${itemId}/${f.originalname}`;
+    await uploadTmpAsJpegToKeyStrict(f.path, key, f.originalname);
     await client.query(
       `INSERT INTO for_sale_photos (item_id, url, alt, sort_order)
        VALUES ($1, $2, NULL, $3)`,
@@ -884,6 +928,7 @@ async function saveForSalePhotos(client, itemId, files) {
 router.post(
   '/admin/for-sale/add',
   ensureAuth,
+  uploadLimiter,
   upload.array('photos', 16),
   async (req, res, next) => {
     const { title, description } = req.body;
@@ -920,9 +965,6 @@ router.post(
 
 // ---------------- Update For Sale ------------------- //
 
-const toPublicAbs = (u) =>
-  path.join(__dirname, '..', 'public', String(u).replace(/^[\\/]+/, '').replace(/\//g, path.sep));
-
 /**
  * GET /admin/for-sale/:id/photos
  * Returns [{ id, url, sort_order }] for the admin grid.
@@ -949,17 +991,15 @@ router.post(
     try {
       await client.query('BEGIN');
 
-      const { rows } = await db.query(
+      const { rows } = await client.query(
         'SELECT url FROM for_sale_photos WHERE id=$1 AND item_id=$2',
         [photo_id, item_id]
       );
       const row = rows[0];
       if (!row) { await client.query('ROLLBACK'); return res.redirect('/admin'); }
 
-      const destAbs = toPublicAbs(row.url);
-      await fs.mkdir(path.dirname(destAbs), { recursive: true });
-      try { await fs.unlink(destAbs); } catch {}
-      await fs.rename(req.file.path, destAbs);
+      const key = row.url.slice(1);
+      await uploadTmpAsJpegToKeyStrict(req.file.path, key, req.file.originalname);
 
       await client.query('COMMIT');
 
@@ -984,18 +1024,40 @@ router.post(
 // MAX photos per for-sale item
 const MAX_SALE_PHOTOS = 16;
 
-async function ensureDir(dir) {
-  await fs.mkdir(dir, { recursive: true });
-}
 
 /**
  * POST /admin/for-sale/photos/add
  */
 
+function uploadSaleAddPhotos(req, res, next) {
+  // In your fetch() you already set: headers: { Accept: 'application/json' }
+  const wantsJSON =
+    (req.headers.accept && req.headers.accept.includes('application/json')) ||
+    req.headers['x-requested-with'] === 'XMLHttpRequest';
+
+  upload.array('photos', MAX_SALE_PHOTOS)(req, res, (err) => {
+    if (!err) return next();
+
+    // Friendly message
+    let msg = err.message || 'Upload failed.';
+
+    // Optional: nicer Multer messages
+    if (err.code === 'LIMIT_FILE_SIZE') msg = 'That file is too large.';
+    if (err.code === 'LIMIT_FILE_COUNT') msg = 'Too many files selected.';
+    if (err.code === 'LIMIT_UNEXPECTED_FILE') msg = 'Unexpected upload field.';
+
+    if (wantsJSON) return res.status(400).json({ ok: false, error: msg });
+
+    req.flash('error', msg);
+    return res.redirect('/admin#sec-forsale');
+  });
+}
+
 router.post(
   '/admin/for-sale/photos/add',
   ensureAuth,
-  upload.array('photos', MAX_SALE_PHOTOS),
+  uploadLimiter,
+  uploadSaleAddPhotos,
   async (req, res, next) => {
     const wantsJSON =
       (req.headers.accept && req.headers.accept.includes('application/json')) ||
@@ -1026,16 +1088,14 @@ router.post(
         const msg = room === 0
           ? `This item already has the maximum of ${MAX_SALE_PHOTOS} photos.`
           : 'No files selected.';
-        return wantsJSON ? res.status(400).json({ ok: false, error: msg })
-                         : res.redirect('/admin?msg=' + encodeURIComponent(msg));
+        if (wantsJSON) return res.status(400).json({ ok: false, error: msg });
+        req.flash('error', msg);
+        return res.redirect('/admin#sec-forsale');
       }
 
       const allowed = files.slice(0, room);
       const extra = files.slice(room);
       for (const f of extra) { try { await fs.unlink(f.path); } catch {} }
-
-      const destDir = path.join(__dirname, '..', 'public', 'uploads', 'for-sale', String(item_id));
-      await ensureDir(destDir);
 
       const { rows: maxRows } = await client.query(
         'SELECT COALESCE(MAX(sort_order), 0) AS max FROM for_sale_photos WHERE item_id=$1',
@@ -1045,11 +1105,12 @@ router.post(
 
       let added = 0;
       for (const f of allowed) {
-        const filename = `${nextOrder}.jpg`;                       // keep numeric slot filenames
-        const destPath = path.join(destDir, filename);
-        await fs.rename(f.path, destPath);
+        const filename = makeUniqueSalePhotoName(nextOrder);
 
         const webPath = `/uploads/for-sale/${item_id}/${filename}`;
+        const key = webPath.slice(1);
+
+        await uploadTmpAsJpegToKeyStrict(f.path, key, f.originalname);
         await client.query(
           'INSERT INTO for_sale_photos (item_id, url, sort_order) VALUES ($1,$2,$3)',
           [item_id, webPath, nextOrder]
@@ -1064,9 +1125,9 @@ router.post(
         ? `Added ${added} photo(s).`
         : `Added ${added} photo(s). You can only have ${MAX_SALE_PHOTOS} total, so ${files.length - added} were ignored.`;
 
-      return wantsJSON
-        ? res.json({ ok: true, added, total_allowed: MAX_SALE_PHOTOS, message: note })
-        : res.redirect('/admin?msg=' + encodeURIComponent(note));
+      if (wantsJSON) return res.json({ ok: true, added, total_allowed: MAX_SALE_PHOTOS, message: note });
+        req.flash('success', note);
+        return res.redirect('/admin#sec-forsale');
     } catch (e) {
       await client.query('ROLLBACK');
       // cleanup any remaining tmp files on error
@@ -1114,8 +1175,8 @@ router.post('/admin/for-sale/photo/delete', ensureAuth, upload.none(), async (re
                        : res.redirect('/admin');
     }
 
-    // delete file from disk (best-effort)
-    try { await fs.unlink(toPublicAbs(row.url)); } catch {}
+    // delete file from R2 (best-effort)
+    try { await deleteByUrlIfUploads(row.url); } catch {}
 
     // delete row
     await client.query('DELETE FROM for_sale_photos WHERE id=$1', [photo_id]);
@@ -1141,50 +1202,142 @@ router.post('/admin/for-sale/photo/delete', ensureAuth, upload.none(), async (re
   }
 });
 
+
 // ---------------- Update For Sale ------------------- //
-// Update a For-Sale item (only existing cols; blank = no change)
-router.post('/admin/for-sale/update', ensureAuth, upload.none(), async (req, res, next) => {
-  const { item_id, title, description, is_active_mode } = req.body; // is_active_mode: '', '1', '0'
-  if (!item_id) return res.redirect('/admin');
-
-  const client = await db.connect();
-  try {
-    await client.query('BEGIN');
-
-    const { rows } = await client.query('SELECT * FROM for_sale_items WHERE id = $1', [item_id]);
-    const cur = rows[0];
-    if (!cur) { await client.query('ROLLBACK'); return res.redirect('/admin'); }
-
-    const updates = [];
-    const params  = [];
-    let i = 1;
-
-    if (typeof title === 'string' && title.trim() !== '') {
-      updates.push(`title = $${i++}`); params.push(title.trim());
-    }
-    if (typeof description === 'string' && description.trim() !== '') {
-      updates.push(`description = $${i++}`); params.push(description.trim());
+router.post('/admin/for-sale/update', ensureAuth, uploadLimiter, (req, res, next) => {
+  upload.any()(req, res, async (err) => {
+    // --- Multer errors (no flash needed) ---
+    if (err) {
+      const msg =
+        err.code === 'LIMIT_FILE_SIZE' ? 'That file is too large.' :
+        err.code === 'LIMIT_UNEXPECTED_FILE' ? 'Unexpected upload field.' :
+        'Upload failed.';
+      req.flash('error', msg);
+      return res.redirect('/admin#sec-forsale');
     }
 
-    // is_active tri-state: '' = no change, '1' = set true, '0' = set false
-    if (is_active_mode === '1') { updates.push(`is_active = TRUE`); }
-    else if (is_active_mode === '0') { updates.push(`is_active = FALSE`); }
+    const { item_id, title, description, is_active_mode } = req.body;
+    if (!item_id) return res.redirect('/admin');
 
-    if (updates.length) {
-      updates.push(`updated_at = NOW()`);
-      params.push(item_id);
-      const sql = `UPDATE for_sale_items SET ${updates.join(', ')} WHERE id = $${i}`;
-      await client.query(sql, params);
+    const client = await db.connect();
+    try {
+      await client.query('BEGIN');
+
+      // Ensure item exists
+      const { rows: itemRows } = await client.query(
+        'SELECT id FROM for_sale_items WHERE id = $1',
+        [item_id]
+      );
+      if (!itemRows.length) {
+        await client.query('ROLLBACK');
+        return res.redirect(`/admin?fs_error=${encodeURIComponent('Item not found.')}#sec-forsale`);
+      }
+
+      // ---- 1) Update item fields (your existing logic) ----
+      const updates = [];
+      const params  = [];
+      let i = 1;
+
+      if (typeof title === 'string' && title.trim() !== '') {
+        updates.push(`title = $${i++}`); params.push(title.trim());
+      }
+      if (typeof description === 'string' && description.trim() !== '') {
+        updates.push(`description = $${i++}`); params.push(description.trim());
+      }
+
+      if (is_active_mode === '1') updates.push(`is_active = TRUE`);
+      else if (is_active_mode === '0') updates.push(`is_active = FALSE`);
+
+      if (updates.length) {
+        updates.push(`updated_at = NOW()`); // for_sale_items has this already
+        params.push(item_id);
+        const sql = `UPDATE for_sale_items SET ${updates.join(', ')} WHERE id = $${i}`;
+        await client.query(sql, params);
+      }
+
+      // ---- 2) Photos ----
+      const files = Array.isArray(req.files) ? req.files : [];
+
+      // current count + max sort
+      const { rows: metaRows } = await client.query(
+        `SELECT
+           COUNT(*)::int AS count,
+           COALESCE(MAX(sort_order), 0)::int AS max_sort
+         FROM for_sale_photos
+         WHERE item_id=$1`,
+        [item_id]
+      );
+      const MAX_PHOTOS = 16;
+      let currentCount = metaRows[0]?.count ?? 0;
+      let nextSort     = (metaRows[0]?.max_sort ?? 0) + 1;
+
+      // Split uploads into replacements + new appends
+      const replaceFiles = [];
+      const newFiles = [];
+
+      for (const f of files) {
+        if (!f?.fieldname) continue;
+        if (/^replace_\d+$/.test(f.fieldname)) replaceFiles.push(f);
+        else if (f.fieldname === 'new_photos') newFiles.push(f);
+      }
+
+      // enforce max 16 (replacements do not increase count)
+      if (currentCount + newFiles.length > MAX_PHOTOS) {
+        await client.query('ROLLBACK');
+
+        const msg = `Too many photos. Max ${MAX_PHOTOS} total. You have ${currentCount} and tried to add ${newFiles.length}.`;
+
+        req.flash('error', msg);
+        return res.redirect('/admin#sec-forsale');
+      }
+
+      // 2a) Replacements: overwrite same url/key in R2
+      for (const f of replaceFiles) {
+        const m = /^replace_(\d+)$/.exec(f.fieldname);
+        if (!m) continue;
+        const photoId = Number(m[1]);
+        if (!Number.isInteger(photoId)) continue;
+
+        const { rows: phRows } = await client.query(
+          `SELECT url FROM for_sale_photos WHERE id=$1 AND item_id=$2`,
+          [photoId, item_id]
+        );
+        if (!phRows.length) continue;
+
+        const url = phRows[0].url;                 // "/uploads/for-sale/:item/:n.jpg"
+        const r2Key = String(url).replace(/^\//, ''); // "uploads/for-sale/..."
+        await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
+      }
+
+      // 2b) Appends: create new numbered jpgs
+      for (const f of newFiles) {
+        const filename = `${nextSort}.jpg`;
+        const webPath  = `/uploads/for-sale/${item_id}/${filename}`;
+        const r2Key    = webPath.slice(1);
+
+        await uploadTmpAsJpegToKeyStrict(f.path, r2Key, f.originalname);
+
+        await client.query(
+          `INSERT INTO for_sale_photos (item_id, url, sort_order)
+           VALUES ($1,$2,$3)`,
+          [item_id, webPath, nextSort]
+        );
+
+        nextSort++;
+        currentCount++;
+      }
+
+      await client.query('COMMIT');
+      return res.redirect('/admin#sec-forsale');
+    } catch (e) {
+      await client.query('ROLLBACK');
+      return next(e);
+    } finally {
+      client.release();
     }
-
-    await client.query('COMMIT');
-    res.redirect('/admin');
-  } catch (e) {
-    await client.query('ROLLBACK'); next(e);
-  } finally {
-    client.release();
-  }
+  });
 });
+
 
   // -------------- for sale delete ------------- //
 
@@ -1196,7 +1349,7 @@ router.post('/admin/for-sale/delete', ensureAuth, async (req, res, next) => {
   try {
     await client.query('BEGIN');
 
-    // collect photo URLs to delete from disk
+    // collect photo URLs to delete from R2
     const { rows: photos } = await client.query(
       'SELECT url FROM for_sale_photos WHERE item_id = $1', [item_id]
     );
@@ -1204,12 +1357,8 @@ router.post('/admin/for-sale/delete', ensureAuth, async (req, res, next) => {
     await client.query('DELETE FROM for_sale_photos WHERE item_id = $1', [item_id]);
     await client.query('DELETE FROM for_sale_items  WHERE id = $1',      [item_id]);
 
-    // remove files/folder
-    const toPublic = (u) => path.join(__dirname, '..', 'public', String(u).replace(/^[\\/]+/, ''));
-    for (const p of photos) { try { await fs.unlink(toPublic(p.url)); } catch {} }
-
-    const dir = path.join(__dirname, '..', 'public', 'uploads', 'for-sale', String(item_id));
-    try { await fs.rm(dir, { recursive: true, force: true }); } catch {}
+    // remove files in R2
+    await Promise.allSettled(photos.map((p) => deleteByUrlIfUploads(p.url)));
 
     await client.query('COMMIT');
     res.redirect('/admin');
@@ -1220,40 +1369,48 @@ router.post('/admin/for-sale/delete', ensureAuth, async (req, res, next) => {
 
 
 
+
+
 // -------------- TEAM: Add --------------- //
-
-const PUBLIC_DIR = path.join(__dirname, '..', 'public');
-const webJoin = (...parts) => '/' + parts.map(p => String(p).replace(/^\/+|\/+$/g, '')).join('/');
-const toPublicPath = (url) => path.join(PUBLIC_DIR, String(url).replace(/^[\\/]+/, '').replace(/\//g, path.sep));
-const safeName = (name) => String(name).replace(/[^\w.\-]+/g, '_');
-
-
-async function saveTeamPhoto(memberId, file) {
-  const fname = safeName(file.originalname);
-  const dir   = path.join(PUBLIC_DIR, 'uploads', 'team', String(memberId));
-  await fs.mkdir(dir, { recursive: true });
-  const dest  = path.join(dir, fname);
-  await fs.rename(file.path, dest);
-  return webJoin('uploads', 'team', String(memberId), fname); // => "/uploads/team/3/me.jpg"
+function isImageUpload(file) {
+  if (!file) return false;
+  const ext = path.extname(file.originalname || '').toLowerCase();
+  const okExt = ['.jpg', '.jpeg', '.png', '.webp', '.heic', '.heif'].includes(ext);
+  const okMime = (file.mimetype && file.mimetype.startsWith('image/')) || file.mimetype === 'application/octet-stream';
+  return okExt || okMime;
 }
 
-router.post('/admin/team/add', ensureAuth, upload.single('photo'), async (req, res, next) => {
+function makeUniqueName(base) {
+  const rand = Math.random().toString(16).slice(2, 10);
+  return `${base}-${Date.now()}-${rand}.jpg`;
+}
+
+async function saveTeamPhoto(memberId, file) {
+  // Store as /uploads/team/:id/<unique>.jpg
+  const filename = makeUniqueName('team');
+  const webPath = `/uploads/team/${memberId}/${filename}`;
+  const r2Key = webPath.slice(1);
+
+  await uploadTmpAsJpegToKeyStrict(file.path, r2Key, file.originalname);
+  return webPath; // => "/uploads/team/3/team-....jpg"
+}
+
+
+router.post('/admin/team/add', ensureAuth, uploadLimiter, upload.single('photo'), async (req, res, next) => {
   const { name, role, bio } = req.body;
   if (!name || !role) return res.redirect('/admin');
 
-  const file = req.file && req.file.mimetype?.startsWith('image/') ? req.file : null;
+  const file = isImageUpload(req.file) ? req.file : null;
 
   const client = await db.connect();
   try {
     await client.query('BEGIN');
 
-    // 🔹 NEW: get next sort order
     const { rows: nx } = await client.query(
       'SELECT COALESCE(MAX(sort_order), 0) + 1 AS next FROM team'
     );
     const nextSort = nx[0].next;
 
-    // 🔹 UPDATED: include sort_order in insert
     const { rows } = await client.query(
       `INSERT INTO team (name, role, bio, photo_url, sort_order)
        VALUES ($1,$2,$3,NULL,$4)
@@ -1266,25 +1423,28 @@ router.post('/admin/team/add', ensureAuth, upload.single('photo'), async (req, r
       const url = await saveTeamPhoto(memberId, file);
       await client.query(`UPDATE team SET photo_url = $1 WHERE id = $2`, [url, memberId]);
     } else if (req.file) {
+      // non-image uploaded; discard temp
       try { await fs.unlink(req.file.path); } catch {}
     }
 
     await client.query('COMMIT');
     res.redirect('/admin');
-  } catch (e) { await client.query('ROLLBACK'); next(e); }
-  finally { client.release(); }
+  } catch (e) {
+    await client.query('ROLLBACK'); next(e);
+  } finally {
+    client.release();
+  }
 });
-
 
 
 
 // --------- TEAM: Update  ---------- //
 
-router.post('/admin/team/update', ensureAuth, upload.single('photo'), async (req, res, next) => {
+router.post('/admin/team/update', ensureAuth, uploadLimiter, upload.single('photo'), async (req, res, next) => {
   const { member_id, name, role, bio } = req.body;
   if (!member_id) return res.redirect('/admin');
 
-  const file = req.file && req.file.mimetype?.startsWith('image/') ? req.file : null;
+  const file = isImageUpload(req.file) ? req.file : null;
 
   const client = await db.connect();
   try {
@@ -1297,15 +1457,17 @@ router.post('/admin/team/update', ensureAuth, upload.single('photo'), async (req
     const sets = [], vals = []; let i = 1;
     if (typeof name === 'string' && name.trim() !== '') { sets.push(`name = $${i++}`); vals.push(name.trim()); }
     if (typeof role === 'string' && role.trim() !== '') { sets.push(`role = $${i++}`); vals.push(role.trim()); }
-    if (typeof bio === 'string' && bio.trim() !== '') {sets.push(`bio = $${i++}`); vals.push(bio.trim());}
-      
+    if (typeof bio === 'string' && bio.trim() !== '')  { sets.push(`bio = $${i++}`);  vals.push(bio.trim()); }
 
     if (file) {
-      if (currentUrl) { try { await fs.unlink(toPublicPath(currentUrl)); } catch {} }
+      // delete old R2 object (best-effort)
+      if (currentUrl) {
+        try { await deleteByUrlIfUploads(currentUrl); } catch {}
+      }
+
       const url = await saveTeamPhoto(member_id, file);
       sets.push(`photo_url = $${i++}`); vals.push(url);
     } else if (req.file) {
-      // non-image uploaded; discard
       try { await fs.unlink(req.file.path); } catch {}
     }
 
@@ -1316,9 +1478,13 @@ router.post('/admin/team/update', ensureAuth, upload.single('photo'), async (req
 
     await client.query('COMMIT');
     res.redirect('/admin');
-  } catch (e) { await client.query('ROLLBACK'); next(e); }
-  finally { client.release(); }
+  } catch (e) {
+    await client.query('ROLLBACK'); next(e);
+  } finally {
+    client.release();
+  }
 });
+
 
 // Drag-to-reorder team
 router.post('/admin/team/reorder', ensureAuth, express.json(), async (req, res, next) => {
@@ -1352,10 +1518,26 @@ router.post('/admin/team/delete', ensureAuth, async (req, res, next) => {
   const { member_id } = req.body;
   if (!member_id) return res.redirect('/admin');
 
+  const client = await db.connect();
   try {
-    await db.query(`DELETE FROM team WHERE id = $1`, [member_id]);
+    await client.query('BEGIN');
+
+    const { rows } = await client.query(`SELECT photo_url FROM team WHERE id=$1`, [member_id]);
+    const photoUrl = rows[0]?.photo_url || null;
+
+    await client.query(`DELETE FROM team WHERE id = $1`, [member_id]);
+
+    if (photoUrl) {
+      try { await deleteByUrlIfUploads(photoUrl); } catch {}
+    }
+
+    await client.query('COMMIT');
     res.redirect('/admin');
-  } catch (err) { next(err); }
+  } catch (err) {
+    await client.query('ROLLBACK'); next(err);
+  } finally {
+    client.release();
+  }
 });
 
 

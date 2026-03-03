@@ -25,7 +25,7 @@ async function saveNewIgToken(accessToken, expiresInSeconds) {
 exports.dashboard = async (req, res) => {
   try {
     const buildsQ = pool.query(`
-      SELECT id, slug, name, is_completed
+      SELECT id, slug, name, owner_name, is_completed
       FROM builds
       ORDER BY created_at DESC
     `);
@@ -42,7 +42,13 @@ exports.dashboard = async (req, res) => {
       ORDER BY sort_order ASC NULLS LAST, id ASC
     `).catch(() => ({ rows: [] }));
 
-    const [buildsRes, forSaleRes, teamRes] = await Promise.all([buildsQ, forSaleQ, teamQ]);
+    const usersQ = pool.query(
+      `SELECT id, name, email, role
+      FROM users
+      ORDER BY id ASC`
+    );
+
+    const [buildsRes, forSaleRes, teamRes, usersRes] = await Promise.all([buildsQ, forSaleQ, teamQ, usersQ]);
     
 
     res.render('admin/dashboard', {
@@ -51,10 +57,11 @@ exports.dashboard = async (req, res) => {
       forSale: forSaleRes.rows,
       team: teamRes.rows,
       user: req.user,
+      users: usersRes.rows
     });
   } catch (err) {
     console.error('Admin dashboard error:', err);
-    res.render('admin/dashboard', { title: 'Admin', builds: [], forSale: [], team: [], user: req.user });
+    res.render('admin/dashboard', { title: 'Admin', builds: [], forSale: [], team: [], users: [], user: req.user });
   }
 };
 
@@ -146,7 +153,7 @@ exports.createUser = async (req, res) => {
     await pool.query(
       `INSERT INTO users (email, password_hash, role, name)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (email) DO UPDATE
+       ON CONFLICT (email) DO NOTHING
          SET password_hash = EXCLUDED.password_hash,
              role = EXCLUDED.role,
              name = EXCLUDED.name`,
@@ -167,6 +174,79 @@ exports.createUser = async (req, res) => {
       message: null,
       error: 'Failed to create user. Check server logs.'
     });
+  }
+};
+
+exports.resetPasswordForm = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    if (!Number.isFinite(id)) return res.status(400).send('Bad user id');
+
+    const { rows } = await pool.query(
+      'SELECT id, email, name, role FROM users WHERE id=$1',
+      [id]
+    );
+
+    const target = rows[0];
+    if (!target) return res.status(404).send('User not found');
+
+    return res.render('admin/resetPassword', {
+      title: 'Reset Password',
+      user: req.user,
+      target,
+      message: null,
+      error: null
+    });
+  } catch (err) {
+    console.error('resetPasswordForm error:', err);
+    return res.status(500).send('Server error');
+  }
+};
+
+exports.resetPassword = async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const pass = (req.body.password || '').trim();
+
+    if (!Number.isFinite(id)) return res.status(400).send('Bad user id');
+
+    if (!pass || pass.length < 8) {
+      // re-fetch user for the re-render
+      const { rows } = await pool.query(
+        'SELECT id, email, name, role FROM users WHERE id=$1',
+        [id]
+      );
+      const target = rows[0];
+
+      return res.render('admin/resetPassword', {
+        title: 'Reset Password',
+        user: req.user,
+        target,
+        message: null,
+        error: 'Password is required (min 8 characters).'
+      });
+    }
+
+    const hash = await bcrypt.hash(pass, 12);
+
+    const result = await pool.query(
+      'UPDATE users SET password_hash=$1 WHERE id=$2 RETURNING id, email, name, role',
+      [hash, id]
+    );
+
+    const target = result.rows[0];
+    if (!target) return res.status(404).send('User not found');
+
+    return res.render('admin/resetPassword', {
+      title: 'Reset Password',
+      user: req.user,
+      target,
+      message: `Password reset for ${target.email}`,
+      error: null
+    });
+  } catch (err) {
+    console.error('resetPassword error:', err);
+    return res.status(500).send('Server error');
   }
 };
 

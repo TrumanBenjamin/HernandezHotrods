@@ -1,6 +1,7 @@
 document.addEventListener('DOMContentLoaded', function () {
   
 
+  
 
 
 
@@ -11,7 +12,8 @@ document.addEventListener('DOMContentLoaded', function () {
   function collectWaiters() {
     // 1) <img> tags (skip gallery grid)
     let imgs = Array.from(document.images).filter(img =>
-      !img.closest('.gallery-grid') && img.getAttribute('loading') !== 'lazy'
+      !img.closest('.gallery-grid') &&
+      img.getAttribute('loading') !== 'lazy'
     );
 
     // On home, skip hero + nav logo
@@ -31,8 +33,13 @@ document.addEventListener('DOMContentLoaded', function () {
     }).filter(Boolean);
 
     const imgPromises = imgs.map(img => new Promise(resolve => {
-      if (img.complete) { img.classList.add('is-loaded'); return resolve(); }
-      img.addEventListener('load',  () => { img.classList.add('is-loaded'); resolve(); }, { once: true });
+      const done = () => {
+        const afterDecode = img.decode ? img.decode().catch(() => {}) : Promise.resolve();
+        afterDecode.finally(() => { img.classList.add('is-loaded'); resolve(); });
+      };
+
+      if (img.complete) return done();
+      img.addEventListener('load', done, { once: true });
       img.addEventListener('error', () => resolve(), { once: true });
     }));
 
@@ -88,13 +95,21 @@ document.addEventListener('DOMContentLoaded', function () {
   allImgs.forEach((img) => {
     if (img.classList.contains('hero-logo')) return;
     const mark = () => {
-      // If the page is already 'ready', add the class on the next frame
-      // so the browser sees a before/after change and runs the transition.
-      if (docEl.classList.contains('is-ready')) {
-        requestAnimationFrame(() => img.classList.add('is-loaded'));
-      } else {
-        img.classList.add('is-loaded');
-      }
+      const addClass = () => img.classList.add('is-loaded');
+
+      // Wait for decode so the first painted frame doesn't flash
+      const afterDecode = img.decode
+        ? img.decode().catch(() => {})   // decode can fail; don't block
+        : Promise.resolve();
+
+      afterDecode.finally(() => {
+        // If the page is already 'ready', add on next frame for transition
+        if (docEl.classList.contains('is-ready')) {
+          requestAnimationFrame(addClass);
+        } else {
+          addClass();
+        }
+      });
     };
 
     if (img.complete) {
@@ -526,6 +541,57 @@ if (homeHero && homeFadeTarget) {
       counterEl = lb.querySelector('.lightbox__counter');
       lb.spinnerEl = lb.querySelector('.lightbox__spinner'); 
 
+  function showSpinner() {
+  lb.spinnerEl.hidden = false;
+  imgEl.style.opacity = '0'; // optional: prevents flash of old image
+}
+
+function hideSpinner() {
+  lb.spinnerEl.hidden = true;
+  imgEl.style.opacity = '';
+}
+
+function setLightboxSrc(src) {
+  // cancel any previous spinner delay
+  if (lb._spinTimer) clearTimeout(lb._spinTimer);
+
+  // hide spinner by default (so fast images don’t flash it)
+  hideSpinner();
+
+  // clear handlers
+  imgEl.onload = null;
+  imgEl.onerror = null;
+
+  // show spinner ONLY if it takes longer than 120ms
+  lb._spinTimer = setTimeout(() => {
+    showSpinner();
+  }, 120);
+
+  imgEl.onload = () => {
+    clearTimeout(lb._spinTimer);
+    hideSpinner();
+    imgEl.style.opacity = '1'; // if you want explicit
+  };
+
+  imgEl.onerror = () => {
+    clearTimeout(lb._spinTimer);
+    hideSpinner();
+    imgEl.style.opacity = '1';
+  };
+
+  // start the load
+  imgEl.style.opacity = '0'; // keep your fade behavior
+  imgEl.src = src;
+
+  // cached/instant: finish immediately, no spinner ever appears
+  if (imgEl.complete && imgEl.naturalWidth > 0) {
+    clearTimeout(lb._spinTimer);
+    hideSpinner();
+    imgEl.style.opacity = '1';
+  }
+}
+
+
        // === START of new ZOOM / PAN code ===
 if (!lb.dataset.zoomBound) {
   lb.dataset.zoomBound = '1';
@@ -894,16 +960,22 @@ function zoomAt(clientX, clientY, targetScale) {
 
       // Index of the clicked item
       idx = Math.max(0, nodes.indexOf(itemEl));
-      show(idx);
 
-      // Open overlay & lock scroll
-      // ensure we start from the "clxosed" state, then animate into open
+      // Open overlay first
       lb.classList.remove('closing');
-      lb.classList.remove('open');   // make sure it's in the base state
+      lb.classList.remove('open');
 
       requestAnimationFrame(() => {
         lb.classList.add('open');
+
+        // now that it can paint, show the image (fade will work consistently)
+        show(idx);
+
+        // Preload neighbors (move here too if you want)
+        preload(idx + 1);
+        preload(idx - 1);
       });
+
 
       // Freeze page at current scroll position
       const y = window.scrollY;
@@ -922,28 +994,60 @@ function zoomAt(clientX, clientY, targetScale) {
       const item = group[i];
       if (!item) return;
 
-      lb?.resetForNewImage?.();
+      // cancel any prior spinner timer
+      if (lb._spinTimer) clearTimeout(lb._spinTimer);
 
       imgEl.alt = item.alt;
 
-      if (!imgEl.complete) {
+      // hide spinner initially (avoid flash on cached)
+      if (lb.spinnerEl) lb.spinnerEl.setAttribute('hidden', '');
+
+      // 1) quick fade OUT (80ms)
+      const prevTransition = imgEl.style.transition;
+      imgEl.style.transition = 'opacity 80ms ease';
+      imgEl.style.opacity = '0';
+
+      // show spinner only if it’s still not done after 300ms
+      lb._spinTimer = setTimeout(() => {
         if (lb.spinnerEl) lb.spinnerEl.removeAttribute('hidden');
-        imgEl.style.opacity = '0';
-      }
+      }, 300);
 
-      imgEl.onload = () => {
-        imgEl.style.opacity = '1';
+      // clear old handlers
+      imgEl.onload = null;
+      imgEl.onerror = null;
+
+      const finishIn = () => {
+        if (lb._spinTimer) clearTimeout(lb._spinTimer);
         if (lb.spinnerEl) lb.spinnerEl.setAttribute('hidden', '');
+
+        // 3) fade IN (200ms)
+        imgEl.style.transition = 'opacity 200ms ease';
+        requestAnimationFrame(() => { // ensure transition applies
+          imgEl.style.opacity = '1';
+        });
+
+        // restore whatever transition you had (optional)
+        setTimeout(() => {
+          imgEl.style.transition = prevTransition;
+        }, 220);
       };
 
-      imgEl.onerror = () => {
-        if (lb.spinnerEl) lb.spinnerEl.setAttribute('hidden', '');
-      };
+      // 2) after fade-out completes, swap src
+      setTimeout(() => {
+        imgEl.src = item.src;
 
-      imgEl.src = item.src; // ← unchanged
+        // if cached, onload may not fire → still fade in
+        if (imgEl.complete && imgEl.naturalWidth > 0) {
+          finishIn();
+        } else {
+          imgEl.onload = finishIn;
+          imgEl.onerror = finishIn;
+        }
+      }, 85);
 
       counterEl.textContent = `${i + 1} / ${group.length}`;
     }
+
 
     function nav(step) {
       if (!group.length) return;
@@ -964,8 +1068,6 @@ function zoomAt(clientX, clientY, targetScale) {
       lb.classList.remove('open');
       lb.classList.add('closing');
 
-      // Clear the image immediately
-      const imgEl = lb.querySelector('.lightbox__img');
       if (imgEl) {
         imgEl.removeAttribute('src');
         imgEl.removeAttribute('srcset');
@@ -1024,6 +1126,8 @@ function zoomAt(clientX, clientY, targetScale) {
       card.addEventListener('focusout', stop);
     });
   })();
+
+  
   
 
 
@@ -1036,9 +1140,11 @@ function zoomAt(clientX, clientY, targetScale) {
     if (!cards.length) return;
 
     let activeCard = null;
-    // When true, ignore the *next* activation (hover OR focus) on any card
     let suppressNextActivation = false;
     let leftViaFollow = false;
+
+    let lastMouseX = null;
+    let lastMouseY = null;
 
     function clearActive() {
       grid.classList.remove('social-grid--hovering');
@@ -1055,66 +1161,63 @@ function zoomAt(clientX, clientY, targetScale) {
       if (activeCard) activeCard.classList.add('is-active');
     }
 
-    // Called whenever we know we're "leaving" the grid/tab
     function markLeaving() {
-      suppressNextActivation = true; // swallow first fake hover/focus when we come back
+      suppressNextActivation = true;
       clearActive();
     }
-    
+
+    function activateCard(card) {
+      if (suppressNextActivation) {
+        if (leftViaFollow) {
+          suppressNextActivation = false;
+          leftViaFollow = false;
+        } else {
+          suppressNextActivation = false;
+          return;
+        }
+      }
+      grid.classList.add('social-grid--hovering');
+      setActive(card);
+    }
+
+    window.addEventListener('mousemove', (e) => {
+      lastMouseX = e.clientX;
+      lastMouseY = e.clientY;
+    }, { passive: true });
+
+    window.addEventListener('scroll', () => {
+      if (lastMouseX == null || lastMouseY == null) return;
+
+      const el = document.elementFromPoint(lastMouseX, lastMouseY);
+      if (!el) return;
+
+      const card = el.closest?.('.social-card');
+      if (!card || !grid.contains(card)) return;
+
+      activateCard(card);
+    }, { passive: true });
 
     cards.forEach((card) => {
-      card.addEventListener('mouseenter', () => {
-        if (suppressNextActivation) {
-          if (leftViaFollow) {
-            // Left via Follow Us: DO NOT swallow this first hover
-            suppressNextActivation = false;
-            leftViaFollow = false;
-          } else {
-            // Normal case (left via card click): swallow the synthetic hover
-            suppressNextActivation = false;
-            return;
-          }
-        }
+      card.addEventListener('mouseenter', () => activateCard(card));
 
-        grid.classList.add('social-grid--hovering');
-        setActive(card);
-      });
-
-      card.addEventListener('focusin', () => {
-        if (suppressNextActivation) {
-          if (leftViaFollow) {
-            suppressNextActivation = false;
-            leftViaFollow = false;
-          } else {
-            suppressNextActivation = false;
-            return;
-          }
-        }
-
-        grid.classList.add('social-grid--hovering');
-        setActive(card);
-      });
-
+      card.addEventListener('focusin', () => activateCard(card));
     });
 
     const followBtn = document.querySelector('.social-head .btn-cta');
-      if (followBtn) {
-        followBtn.addEventListener('mousedown', () => {
-          leftViaFollow = true;
-        });
-      }
+    if (followBtn) {
+      followBtn.addEventListener('mousedown', () => {
+        leftViaFollow = true;
+      });
+    }
 
-    // Mouse leaves the whole grid → no card should be active
     grid.addEventListener('mouseleave', clearActive);
 
-    // Keyboard / focus leaves the grid
     grid.addEventListener('focusout', () => {
       if (!grid.contains(document.activeElement)) {
         clearActive();
       }
     });
 
-    // Tab / page transitions: we're effectively leaving the grid
     window.addEventListener('blur', markLeaving);
     window.addEventListener('pagehide', markLeaving);
 
@@ -1129,17 +1232,16 @@ function zoomAt(clientX, clientY, targetScale) {
 
 
 
-  // --- Instagram background subtle spin on scroll ---
+  // --- Instagram background spin on scroll ---
   (function () {
-    const feed = document.querySelector('.social-feed'); // or .social-feed__inner if that's where bg lives
+    const feed = document.querySelector('.social-feed');
     if (!feed) return; 
 
-    const baseAngle = 180;   // starting angle
-    const maxDelta = 20;      // +/- degrees from base (smaller = more subtle)
+    const baseAngle = 180;
+    const maxDelta = 20;
 
-    // Thresholds as fractions of viewport height (top/bottom band)
-    const topThresholdRatio = 0.15;    // 15% from top
-    const bottomThresholdRatio = 0.15; // 15% from bottom
+    const topThresholdRatio = 0.15;
+    const bottomThresholdRatio = 0.15;
 
     let ticking = false;
 
@@ -1149,23 +1251,18 @@ function zoomAt(clientX, clientY, targetScale) {
       const rect = feed.getBoundingClientRect();
       const vh = window.innerHeight || document.documentElement.clientHeight;
 
-      // If it's completely offscreen, don't update; keep last angle
       if (rect.bottom <= 0 || rect.top >= vh) return;
 
       const topLimit = vh * topThresholdRatio;
       const bottomLimit = vh * (1 - bottomThresholdRatio);
 
-      // Center of the feed relative to viewport
       const centerY = rect.top + rect.height / 2;
 
-      // Normalize position within the band: 0 at topLimit, 1 at bottomLimit
       let t = (centerY - topLimit) / (bottomLimit - topLimit);
 
-      // Clamp to [0, 1] so it doesn't jump outside the band
       if (t < 0) t = 0;
       else if (t > 1) t = 1;
 
-      // Map 0–1 → -maxDelta…+maxDelta around baseAngle
       const delta = (t - 0.5) * 2 * maxDelta;
       const angle = baseAngle + delta;
 
@@ -1182,7 +1279,7 @@ function zoomAt(clientX, clientY, targetScale) {
     window.addEventListener('scroll', onScrollOrResize, { passive: true });
     window.addEventListener('resize', onScrollOrResize);
 
-    updateAngle(); // initial set
+    updateAngle();
   })();
 
 
@@ -1196,31 +1293,26 @@ function zoomAt(clientX, clientY, targetScale) {
     const dividers = document.querySelectorAll('.for-sale-divider');
     if (!dividers.length) return;
 
-    const MIN_W = 40; // %
-    const MAX_W = 70; // %
+    const MIN_W = 40;
+    const MAX_W = 70;
 
     let ticking = false;
 
     function computeWidthForDivider(rect, vh) {
       const center = rect.top + rect.height / 2;
-      const f = center / vh; // 0 = top, 1 = bottom
+      const f = center / vh;
 
-      const topThreshold = 0.15; // top 15% of screen
-      const bottomThreshold = 1.0; // we’ll fade from center down to bottom
+      const topThreshold = 0.15;
+      const bottomThreshold = 1.0;
 
       let width;
 
       if (f >= 0.5) {
-        // Between center and bottom:
-        //  center (0.5) => 70%, bottom (1.0) => 40%
         const tBottom = Math.min(1, (f - 0.5) / (bottomThreshold - 0.5));
         width = MAX_W - (MAX_W - MIN_W) * tBottom;
       } else if (f >= topThreshold && f < 0.5) {
-        // Between top 15% line and center: stay at max width
         width = MAX_W;
       } else {
-        // Above the top 15% line:
-        //  f = topThreshold => 70%, f = 0 => 40%
         const tTop = Math.min(1, (topThreshold - f) / topThreshold);
         width = MAX_W - (MAX_W - MIN_W) * tTop;
       }
@@ -1249,14 +1341,38 @@ function zoomAt(clientX, clientY, targetScale) {
     window.addEventListener('resize', onScrollOrResize, { passive: true });
     window.addEventListener('load', updateDividerWidths);
 
-    // initial run
     updateDividerWidths();
   })();
   // ────── End of For Sale divider width on scroll ──────
 
 
 
+  // Current Builds Thumb Image Reveal at the same time
+  (function () {
+    const grid =
+      document.querySelector('.current-builds .grid') ||
+      document.querySelector('.completed-builds .grid');
 
+    if (!grid) return;
 
+    const thumbs = Array.from(grid.querySelectorAll('img.thumb'));
+    if (!thumbs.length) {
+      grid.classList.add('grid-ready');
+      return;
+    }
+
+    const waitFor = (img) => new Promise((resolve) => {
+      if (img.complete && img.naturalWidth > 0) return resolve();
+      img.addEventListener('load', resolve, { once: true });
+      img.addEventListener('error', resolve, { once: true });
+    });
+
+    Promise.all(thumbs.map(waitFor)).then(() => {
+      grid.classList.add('grid-ready');
+    });
+
+    // safety fallback: never hide forever
+    setTimeout(() => grid.classList.add('grid-ready'), 5000);
+  })();
 
 });

@@ -24,13 +24,13 @@
                       /img/1200/70<%= base %> 1200w"
                     sizes="(max-width: 600px) 100vw, (max-width: 1200px) 50vw, 33vw"
                     alt="<%= b.name %>"
-                    loading="lazy"
                     decoding="async"
-                    fetchpriority="low"
+                    fetchpriority="auto"
                   >
                 <% } else { %>
                   <div class="thumb placeholder"></div>
                 <% } %>
+                <div class="hero-shadow-thumb"></div>
               </figure>
 
               <!-- slides OUT to the right -->

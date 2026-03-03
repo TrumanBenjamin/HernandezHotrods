@@ -1,4 +1,5 @@
 <main class="admin-page">
+
   <header class="admin-header">
     <h1>Admin Dashboard</h1>
     <h2 class="admin-greeting"> 
@@ -9,17 +10,47 @@
     </form>
   </header>
 
-  <!-- IG Token Quick Link -->
-  <div class="admin-quick-links">
-    <a href="/admin/ig-token" class="btn-ig-token"> <span>Manage Instagram Access Token</span></a>
-    <a href="/admin/users/new" class="new-user btn-ig-token"><span>Create New User</span></a>
-  </div>
+  <!-- Quick Link -->
+  <% if (user?.role === 'owner') { %>
+    <div class="admin-quick-links">
+      <a href="/admin/ig-token" class="btn-ig-token"><span>Manage Instagram Access Token</span></a>
+      <a href="/admin/users/new" class="new-user btn-ig-token"><span>Create New User</span></a>
+    </div>
+  <% } %>
 
-  <!-- Optional success/error flash area -->
+  <% if (user?.role === 'owner' && users?.length) { %>
+  <div class="admin-section user-management" style="margin-top: 18px;">
+    <div class="admin-section__body">
+      <h3 class="user-title" style="margin-bottom: 10px;">User Management</h3>
+
+      <ul style="list-style:none; padding:0; margin:0; display:grid; gap:10px;">
+        <% users.forEach(u => { %>
+          <li style="display:flex; align-items:center; justify-content:space-between; gap:12px;">
+            <div style="opacity:.9;">
+              <strong><%= u.name %></strong>
+              <span style="opacity:.7;"> — <%= u.email %> (<%= u.role %>)</span>
+            </div>
+
+            <a class="btn-outline" href="/admin/users/<%= u.id %>/reset-password">Reset Password
+            </a>
+          </li>
+        <% }) %>
+      </ul>
+    </div>
+  </div>
+<% } %>
+
   <% if (typeof flash !== 'undefined') { %>
     <div class="admin-flash">
-      <% if (flash.success) { %><p class="ok"><%= flash.success %></p><% } %>
-      <% if (flash.error) { %><p class="bad"><%= flash.error %></p><% } %>
+
+      <% if (flash.success && flash.success.length) { %>
+        <p class="ok"><strong><%= flash.success[0] %></strong></p>
+      <% } %>
+
+      <% if (flash.error && flash.error.length) { %>
+        <p class="bad"><strong><%= flash.error[0] %></strong></p>
+      <% } %>
+
     </div>
   <% } %>
 
@@ -56,7 +87,7 @@
             <input type="hidden" name="is_completed" value="false">
             <div class="grid">
             <label>Owner Name
-                <input name="owner_name" placeholder="First Last" required>
+                <input name="owner_name" placeholder="First Last">
             </label>
             <label>Name (Year Make Model)
                 <input name="name" placeholder="1969 Camaro RS" required>
@@ -76,6 +107,9 @@
             <label>Photos (50–100+)
             <input type="file" name="photos" accept="image/*" multiple>
             </label>
+            <label class="heic-warning hint" style="display:none; opacity:.85; font-size: 18px; color: rgb(255, 179, 0);">
+              ⚠️ HEIC photo(s) detected, these will take much longer to process. Thanks Apple 🙃
+            </label>
             <button type="submit" class="btn-red">Create Current Build</button>
         </form>
 
@@ -84,7 +118,7 @@
             <label>Select Current Build
             <select name="build_id" required>
                 <% (builds || []).filter(b => !b.is_completed).forEach(b => { %>
-                <option value="<%= b.id %>"><%= b.name %></option>
+                <option value="<%= b.id %>"><%= b.name %><%= b.owner_name ? ` — ${b.owner_name.split(' ')[0]}` : '' %></option>
                 <% }) %>
             </select>
             </label>
@@ -110,6 +144,9 @@
             <label>Add More Photos (optional)
             <input type="file" name="photos" accept="image/*" multiple>
             </label>
+            <label class="heic-warning hint" style="display:none; opacity:.85; font-size: 18px; color: rgb(255, 179, 0);">
+              ⚠️ HEIC photo(s) detected, these will take much longer to process. Thanks Apple 🙃
+            </label>
             <button type="submit" class="btn-red">Save Changes</button>
         </form>
 
@@ -118,7 +155,9 @@
             <label>Select Current Build to Delete
             <select name="build_id" required>
                 <% (builds || []).filter(b => !b.is_completed).forEach(b => { %>
-                <option value="<%= b.id %>"><%= b.name %></option>
+                <option value="<%= b.id %>">
+                  <%= b.name %><%= (b.owner_name && String(b.owner_name).trim()) ? ' — ' + String(b.owner_name).trim().split(' ')[0] : '' %>
+                </option>
                 <% }) %>
             </select>
             </label>
@@ -140,7 +179,7 @@
           <!-- Basic -->
           <div class="grid">
             <label>Owner Name
-              <input name="owner_name" placeholder="First Last" required>
+              <input name="owner_name" placeholder="First Last">
             </label>
             <label>Name (Year Make Model)
               <input name="name" placeholder="1969 Camaro RS" required>
@@ -276,6 +315,9 @@
           <label class="additional-photos">Additional Photos (optional, 50–100+)
             <input type="file" name="photos" accept="image/*" multiple>
           </label>
+          <label class="heic-warning hint" style="display:none; opacity:.85; font-size: 18px; color: rgb(255, 179, 0);">
+              ⚠️ HEIC photo(s) detected, these will take much longer to process. Thanks Apple 🙃
+          </label>
 
           <button type="submit" class="btn-red">Create Completed Build</button>
         </form>
@@ -285,7 +327,9 @@
           <label>Select Completed Build
             <select name="build_id" required>
               <% (builds || []).filter(b => b.is_completed).forEach(b => { %>
-                <option value="<%= b.id %>"><%= b.name %></option>
+                <option value="<%= b.id %>">
+                  <%= b.name %><%= (b.owner_name && String(b.owner_name).trim()) ? ' — ' + String(b.owner_name).trim().split(' ')[0] : '' %>
+                </option>
               <% }) %>
             </select>
           </label>
@@ -408,6 +452,9 @@
           <label class="additional-photos">Add More Photos (optional, 50-100+)
             <input type="file" name="photos" accept="image/*" multiple>
           </label>
+          <label class=" heic-warning hint" style="display:none; opacity:.85; font-size: 18px; color: rgb(255, 179, 0);">
+              ⚠️ HEIC photo(s) detected, these will take much longer to process. Thanks Apple 🙃
+          </label>
 
           <button type="submit" class="btn-red">Save Changes</button>
         </form>
@@ -417,7 +464,9 @@
             <label>Select Completed Build to Delete
             <select name="build_id" required>
                 <% (builds || []).filter(b => b.is_completed).forEach(b => { %>
-                <option value="<%= b.id %>"><%= b.name %></option>
+                <option value="<%= b.id %>">
+                  <%= b.name %><%= (b.owner_name && String(b.owner_name).trim()) ? ' — ' + String(b.owner_name).trim().split(' ')[0] : '' %>
+                </option>
                 <% }) %>
             </select>
             </label>
@@ -455,6 +504,9 @@
           <legend>Photos (up to 16)</legend>
           <input type="file" name="photos" accept="image/*" multiple />
           <p class="hint">Suggested 8–12 photos. Max 16 will be saved.</p>
+          <label class=" heic-warning hint" style="display:none; opacity:.85; font-size: 18px; color: rgb(255, 179, 0);">
+              ⚠️ HEIC photo(s) detected, these will take much longer to process. Thanks Apple 🙃
+          </label>
         </fieldset>
 
         <button type="submit" class="btn-red">Add For Sale Item</button>
@@ -506,8 +558,10 @@
             <legend>Add photos (will append; total max 16)</legend>
             <div class="row" style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
               <input type="file" name="new_photos" id="fs-new-photos" accept="image/*" multiple>
-              <button type="button" id="fs-upload-btn" class="btn-outline">Upload selected</button>
               <span id="fs-upload-hint" class="hint" style="opacity:.85"></span>
+              <label class=" heic-warning hint" style="display:none; width: 100%; opacity:.85; font-size: 18px; color: rgb(255, 179, 0);">
+              ⚠️ HEIC photo(s) detected, these will take much longer to process. Thanks Apple 🙃
+              </label>
             </div>
           </fieldset>
 
@@ -648,6 +702,8 @@
         'completed-update',
         'current-update',
         'for-sale-update',
+        'add-team',
+        'update-team'
       ];
 
       const show = (text = 'Saving…', sub = 'This can take a few seconds.') => {
@@ -853,16 +909,20 @@
   const itemSelect = sec.querySelector('select[name="item_id"]');
   const grid       = sec.querySelector('#fs-photo-grid');
   const fileInput  = sec.querySelector('#fs-new-photos');   // <-- from the Add photos fieldset
-  const uploadBtn  = sec.querySelector('#fs-upload-btn');   // <-- "Upload selected" button
   const hintEl     = sec.querySelector('#fs-upload-hint');  // <-- remaining-count hint
 
   // Helper: update "remaining" message
   function updateRemainingHint() {
-    if (!grid || !hintEl || !uploadBtn) return;
+    if (!grid || !hintEl) return;
+
     const count = grid.querySelectorAll('.photo-card').length;
     const remaining = Math.max(0, 16 - count);
-    hintEl.textContent = `You can add up to ${remaining} more photo${remaining===1?'':'s'}.`;
-    uploadBtn.disabled = remaining === 0;
+
+    if (remaining === 0) {
+      hintEl.textContent = `You can't add any more photos!`;
+    } else {
+      hintEl.textContent = `You can add up to ${remaining} more photo${remaining === 1 ? '' : 's'}.`;
+    }
   }
 
   // Load photos for selected item (builds the grid)
@@ -880,22 +940,22 @@
       }
       data.sort((a,b) => a.sort_order - b.sort_order).forEach(ph => {
         const card = document.createElement('div');
+        const v = Date.now();
         card.className = 'photo-card';
         card.innerHTML = `
-          <img src="${ph.url}" alt="photo ${ph.sort_order}">
-          <form action="/admin/for-sale/photo/replace" method="post" enctype="multipart/form-data">
-            <input type="hidden" name="item_id"  value="${itemId}">
-            <input type="hidden" name="photo_id" value="${ph.id}">
-            <label style="font-size:.85rem">Replace:
-              <input type="file" name="new_photo" accept="image/*" required>
-            </label>
-            <button type="submit" class="btn-outline">Replace</button>
-          </form>
-          <form action="/admin/for-sale/photo/delete" method="post">
-            <input type="hidden" name="item_id"  value="${itemId}">
-            <input type="hidden" name="photo_id" value="${ph.id}">
-            <button type="submit" class="btn-outline">Delete</button>
-          </form>
+          <img src="/img/400/70${ph.url}?v=${v}" alt="photo ${ph.sort_order}">
+
+          <!-- Keep these so ONE "Save Changes" submit can process everything -->
+          <input type="hidden" name="photo_url[]" value="${ph.url}">
+          <input type="hidden" name="photo_id[]"  value="${ph.id}">
+
+          <label style="font-size:.85rem">Replace:
+            <input type="file" name="replace_${ph.id}" accept="image/*">
+          </label>
+
+          <button type="button" class="btn-outline fs-delete-btn" data-photo-id="${ph.id}">
+            Delete
+          </button>
         `;
         grid.appendChild(card);
       });
@@ -907,46 +967,52 @@
     }
   }
 
-  // Live-replace preview without page reload
-  grid.addEventListener('submit', async (e) => {
-    const form = e.target.closest('form[action="/admin/for-sale/photo/replace"]');
-    if (!form) return;            // ignore other forms
-    e.preventDefault();
+  grid.addEventListener('change', (e) => {
+    const input = e.target;
+    if (!(input instanceof HTMLInputElement)) return;
+    if (input.type !== 'file') return;
 
-    const card = form.closest('.photo-card');
-    const img  = card.querySelector('img');
-    const btn  = form.querySelector('button[type="submit"]');
+    // Only run for per-photo replace inputs
+    if (!/^replace_\d+$/.test(input.name)) return;
+
+    const file = input.files?.[0];
+    if (!file) return;
+
+    const img = input.closest('.photo-card')?.querySelector('img');
+    if (!img) return;
+
+    const url = URL.createObjectURL(file);
+    img.src = url;
+    img.onload = () => URL.revokeObjectURL(url);
+  });
+
+  grid.addEventListener('click', async (e) => {
+    const btn = e.target.closest('.fs-delete-btn');
+    if (!btn) return;
+
+    const itemId = itemSelect?.value;
+    const photoId = btn.dataset.photoId;
+    if (!itemId || !photoId) return;
+
+    if (!confirm('Delete this photo?')) return;
 
     try {
-      btn.disabled = true;
-      const originalText = btn.textContent;
-      btn.textContent = 'Replacing…';
-
-      const fd = new FormData(form);
-      fd.append('ajax', '1'); // tell server to return JSON
-
-      const res = await fetch(form.action, {
+      const res = await fetch('/admin/for-sale/photo/delete', {
         method: 'POST',
-        body: fd,
-        headers: { 'Accept': 'application/json' }
+        headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+        body: new URLSearchParams({ item_id: itemId, photo_id: photoId, ajax: '1' })
       });
 
-      if (!res.ok) throw new Error('Upload failed');
-      const data = await res.json(); // { ok:true, url:"/uploads/for-sale/ID/X.jpg" }
+      if (!res.ok) throw new Error('Delete failed');
 
-      // Cache-bust so the new file shows immediately
-      const base = (data.url || img.src).split('?')[0];
-      img.src = `${base}?v=${Date.now()}`;
-
-      form.reset();
-      btn.textContent = 'Replaced ✓';
-      setTimeout(() => { btn.textContent = originalText; btn.disabled = false; }, 800);
+      btn.closest('.photo-card')?.remove();
+      updateRemainingHint();
     } catch (err) {
       console.error(err);
-      btn.disabled = false;
-      alert('Could not replace the image. Please try again.');
+      alert('Could not delete photo. Please try again.');
     }
   });
+
 
   // Live-delete without page reload
   grid.addEventListener('submit', async (e) => {
@@ -985,48 +1051,7 @@
     }
   });
 
-  // AJAX "Add photos" (no page reload)
-  if (uploadBtn && fileInput) {
-    uploadBtn.addEventListener('click', async () => {
-      const itemId = itemSelect?.value;
-      const files = fileInput.files;
-      if (!itemId) return alert('Select an item first.');
-      if (!files || !files.length) return alert('Choose one or more images.');
 
-      const fd = new FormData();
-      fd.append('item_id', itemId);
-      Array.from(files).forEach(f => fd.append('photos', f));
-      fd.append('ajax', '1');
-
-      const original = uploadBtn.textContent;
-      uploadBtn.disabled = true;
-      uploadBtn.textContent = 'Uploading…';
-
-      try {
-        const res = await fetch('/admin/for-sale/photos/add', {
-          method: 'POST',
-          body: fd,
-          headers: { 'Accept': 'application/json' }
-        });
-        const data = await res.json();
-        if (!res.ok || !data.ok) {
-          throw new Error(data?.error || 'Upload failed');
-        }
-        // refresh grid + hint
-        await loadPhotos(itemId);
-        fileInput.value = '';
-        alert(data.message || 'Photos uploaded.');
-      } catch (err) {
-        console.error(err);
-        alert(err.message || 'Could not upload photos.');
-      } finally {
-        uploadBtn.textContent = original;
-        uploadBtn.disabled = false;
-      }
-    });
-  }
-
-  // Initial load + react to item change
   if (itemSelect && grid) {
     loadPhotos(itemSelect.value);
     itemSelect.addEventListener('change', () => loadPhotos(itemSelect.value));
@@ -1247,7 +1272,38 @@
   }
 </script>
 
+<script>
+  document.addEventListener('DOMContentLoaded', function () {
+    const err = document.querySelector('.admin-flash .bad');
+    if (!err) return;
 
+    const msg = err.textContent.trim();
+    if (!msg) return;
+
+    alert(msg);
+  });
+</script>
+
+<script>
+  document.querySelectorAll('input[name="photos"], input[name="new_photos"]').forEach(input => {
+    input.addEventListener('change', function () {
+      const files = Array.from(this.files || []);
+      const hasHeic = files.some(f =>
+        f.name.toLowerCase().endsWith('.heic') ||
+        f.name.toLowerCase().endsWith('.heif')
+      );
+
+      // Find warning inside the same form
+      const form = this.closest('form');
+      if (!form) return;
+
+      const warning = form.querySelector('.heic-warning');
+      if (!warning) return;
+
+      warning.style.display = hasHeic ? 'block' : 'none';
+    });
+  });
+</script>
 
 
 

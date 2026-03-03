@@ -1,5 +1,6 @@
 const express = require('express');
 const app = express();
+app.set("trust proxy", 1);
 const path = require('path');
 require('dotenv').config();
 const expressLayouts = require('express-ejs-layouts');
@@ -9,7 +10,21 @@ const r2 = require("./services/r2");
 const { Readable } = require("stream");
 const publicRoot = path.join(__dirname, "public");
 const imgProxy = require("./routes/imgProxy");
+const cron = require("node-cron");
+const { runIgTokenMonitor } = require("./services/igTokenMonitor");
+const schedule = process.env.IG_MONITOR_CRON || "0 9 * * *";
+const rateLimit = require("express-rate-limit");
+const helmet = require("helmet");
 
+app.use(
+  helmet({
+    contentSecurityPolicy: false,
+    crossOriginResourcePolicy: { policy: "cross-origin" },
+    hsts: process.env.NODE_ENV === "production"
+      ? { maxAge: 60 * 60 * 24 * 365, includeSubDomains: true, preload: false }
+      : false,
+  })
+);
 
 // NEW: Auth/session deps
 const { Pool } = require('pg');                                  // NEW
@@ -18,7 +33,13 @@ const PgSession = require('connect-pg-simple')(session);         // NEW
 const passport = require('passport');                            // NEW
 const LocalStrategy = require('passport-local').Strategy;        // NEW
 const bcrypt = require('bcrypt');                                // NEW
+const flash = require('connect-flash');
 
+
+cron.schedule(schedule, () => {
+  console.log("[IG MONITOR] cron fired", new Date().toISOString());
+  runIgTokenMonitor().catch((e) => console.error("IG token monitor error:", e));
+});
 
 async function streamToBuffer(body) {
   const chunks = [];
@@ -26,9 +47,13 @@ async function streamToBuffer(body) {
   return Buffer.concat(chunks);
 }
 
+app.use("/contact", rateLimit({ windowMs: 15*60*1000, max: 50 }));
+app.use("/auth/login", rateLimit({ windowMs: 15*60*1000, max: 20 }));
+
 // Will use views/layout.ejs
 app.use(expressLayouts);
 app.set('layout', 'layout'); 
+
 
 // View Engine (keep where you had it)
 app.set('view engine', 'ejs');
@@ -58,9 +83,20 @@ app.use(
   })
 );
 
+app.use(flash());
+
+app.use((req, res, next) => {
+  res.locals.flash = {
+    success: req.flash('success'),
+    error: req.flash('error')
+  };
+  next();
+});
+
 // NEW: Passport local strategy
 passport.use(
   new LocalStrategy({ usernameField: 'email' }, async (email, password, done) => {
+    email = (email || '').trim().toLowerCase();
     try {
       const { rows } = await pool.query('SELECT * FROM users WHERE email=$1', [email]);
       const user = rows[0];
