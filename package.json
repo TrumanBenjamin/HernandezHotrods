@@ -17,6 +17,7 @@
     "bcrypt": "^6.0.0",
     "connect-flash": "^0.1.1",
     "connect-pg-simple": "^10.0.0",
+    "dotenv": "^17.3.1",
     "ejs": "^3.1.9",
     "express": "^4.21.2",
     "express-ejs-layouts": "^2.5.1",
@@ -35,7 +36,6 @@
     "sharp": "^0.34.4"
   },
   "devDependencies": {
-    "dotenv": "^17.3.1",
     "nodemon": "^3.1.10"
   }
 }
