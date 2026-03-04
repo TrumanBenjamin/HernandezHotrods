@@ -4982,7 +4982,18 @@ p.success {
 .new-user .admin-section {
   width: 30%;
 }
+.admin-back-link {
+  display: inline-block;
+  margin-top: 8px;
+  font-size: 0.9rem;
+  color: #c7c7c7;
+  text-decoration: none;
+  transition: color 0.2s ease;
+}
 
+.admin-back-link:hover {
+  color: #ffffff;
+}
 
 /* End of New Admin User Page */
 
