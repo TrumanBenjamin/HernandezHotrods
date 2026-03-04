@@ -15,22 +15,30 @@ router.get('/login', (req, res) => {
   });
 });
 
-router.post("/login",
+router.post(
+  "/login",
+  (req, res, next) => {
+    console.log("[LOGIN] hit /auth/login");
+    next();
+  },
   passport.authenticate("local", {
     failureRedirect: "/auth/login",
     failureFlash: "Invalid email or password. Please try again.",
   }),
   async (req, res, next) => {
-    try {
-      // ✅ only emails if req.user.role === "owner" AND IP is not whitelisted
-      await maybeSendOwnerLoginAlert(req, req.user);
-    } catch (err) {
-      // don't block login if email fails
-      console.error("Owner login alert failed:", err);
-    }
+    console.log("[LOGIN] passport success; user:", req.user?.email || req.user?.id);
+    console.log("[LOGIN] req.secure:", req.secure, "x-forwarded-proto:", req.get("x-forwarded-proto"));
+    console.log("[LOGIN] sessionID:", req.sessionID);
 
-    // keep your existing session-save pattern
-    req.session.save(() => res.redirect("/admin"));
+    // This tells us if session store save is the hang
+    const t0 = Date.now();
+    console.log("[LOGIN] about to req.session.save()");
+
+    req.session.save((err) => {
+      console.log("[LOGIN] session.save callback after", Date.now() - t0, "ms", "err=", err);
+      console.log("[LOGIN] redirecting now");
+      return res.redirect("/admin");
+    });
   }
 );
 
