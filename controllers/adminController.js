@@ -153,7 +153,7 @@ exports.createUser = async (req, res) => {
     await pool.query(
       `INSERT INTO users (email, password_hash, role, name)
        VALUES ($1, $2, $3, $4)
-       ON CONFLICT (email) DO NOTHING
+       ON CONFLICT (email) DO UPDATE
          SET password_hash = EXCLUDED.password_hash,
              role = EXCLUDED.role,
              name = EXCLUDED.name`,
