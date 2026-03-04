@@ -65,7 +65,12 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // NEW: DB pool for auth + session store
-const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ...(process.env.NODE_ENV === "production"
+    ? { ssl: { rejectUnauthorized: false } }
+    : {}),
+});
 
 // NEW: Session (Postgres-backed)
 app.use(
