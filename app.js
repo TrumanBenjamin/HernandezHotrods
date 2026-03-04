@@ -65,13 +65,13 @@ app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 
 // NEW: DB pool for auth + session store
-const pool = new Pool({ connectionString: process.env.DATABASE_URL }); // NEW
+const pool = new Pool({ connectionString: process.env.DATABASE_URL, ssl: { rejectUnauthorized: false } });
 
 // NEW: Session (Postgres-backed)
 app.use(
   session({
     store: new PgSession({ pool, tableName: 'session' }),
-    secret: process.env.SESSION_SECRET,           // set this in .env
+    secret: process.env.SESSION_SECRET,
     resave: false,
     saveUninitialized: false,
     cookie: {
