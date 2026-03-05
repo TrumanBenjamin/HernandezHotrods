@@ -140,8 +140,6 @@ app.use((req, res, next) => {
 app.use(imgProxy);
 
 // --- Your existing routes ---
-const staticRoutes = require('./routes/staticRoutes');
-app.use('/', staticRoutes);
 
 
 const contactRoute = require('./routes/contactRoute');
