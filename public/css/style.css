@@ -3360,10 +3360,6 @@ body.is-home .nav-logo.visible {
     display: none;
   }
 
-  .home-contact-box h2{
-    margin: 0;
-    font-size: 28px !important;
-  }
 
   .home-contact-box p{
     margin: 0 auto;
@@ -5380,9 +5376,12 @@ p.success {
   }
 }
 
-
-
-
+@media (max-width: 426px) {
+  .home-contact-box h2 {
+    margin: 0;
+    font-size: 28px !important;
+  }
+}
 
 
 @media (max-width: 480px) {
@@ -5592,7 +5591,7 @@ p.success {
     height: 200px;
   }
   .home-contact-box h2 {
-    font-size: 32px;
+    font-size: 33px;
   }
   .contact-cta {
     padding: 6px 12px;
