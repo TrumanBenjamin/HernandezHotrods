@@ -5008,6 +5008,9 @@ p.success {
     opacity: 1 !important;
     pointer-events: auto !important;
   }
+  .hero-video {
+    opacity: 1;
+  }
   .nav-toggle {
     height: 18px;
     width: 24px;
