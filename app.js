@@ -66,7 +66,10 @@ app.use(express.json());
 
 // NEW: DB pool for auth + session store
 const pool = new Pool({
-  connectionString: process.env.DATABASE_URL
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.NODE_ENV === 'production'
+    ? { rejectUnauthorized: false }
+    : { rejectUnauthorized: false }, // since you're using Render external from local
 });
 
 // NEW: Session (Postgres-backed)
