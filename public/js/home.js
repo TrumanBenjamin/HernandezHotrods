@@ -17,6 +17,9 @@
   if (document.fonts && document.fonts.ready) {
     document.fonts.ready.then(updateHomeHeroHeight);
   }
+  
+
+  
   // Home header-logo reveal after hero
   const navLogoBox = document.querySelector('.site-header .nav-logo');
   const hero = document.querySelector('.home-hero');

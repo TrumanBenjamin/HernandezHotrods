@@ -5004,6 +5004,10 @@ p.success {
   .nav-logo-img {
     height: 26px !important;
   }
+  body.is-home .nav-logo {
+    opacity: 1 !important;
+    pointer-events: auto !important;
+  }
   .nav-toggle {
     height: 18px;
     width: 24px;
@@ -5051,8 +5055,8 @@ p.success {
     width: 100%;
     padding: 0;
   }
-  .hero-logo {
-    width: 60vw !important;
+  .home-hero .hero-logo {
+    display: none;
   }
   .lightbox__counter {
     padding: 10px 50px 5px;
@@ -5111,6 +5115,9 @@ p.success {
   }
   .btp img {
     width: 70% !important;
+  }
+  .social-card-overlay {
+    display: none !important;
   }
   .for-sale-divider {
     /* width: 90% !important; */

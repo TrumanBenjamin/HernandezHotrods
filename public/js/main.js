@@ -161,32 +161,56 @@ document.addEventListener('DOMContentLoaded', function () {
   const navLinks = document.querySelector('.nav-links');
   const overlay = document.querySelector('.nav-overlay');
 
+  // Grab any videos that should pause when nav opens
+  const pageVideos = document.querySelectorAll('#homeHeroVideo, .media-video');
+  let playingVideos = [];
+
   let scrollPosition = 0;
+
+  function pauseVideos() {
+    playingVideos = [];
+
+    pageVideos.forEach(video => {
+      if (!video.paused && !video.ended) {
+        playingVideos.push(video);
+        video.pause();
+      }
+    });
+  }
+
+  function resumeVideos() {
+    playingVideos.forEach(video => {
+      const p = video.play();
+      if (p && typeof p.catch === 'function') p.catch(() => {});
+    });
+
+    playingVideos = [];
+  }
 
   function openNav() {
     scrollPosition = window.scrollY;
     document.body.classList.add('no-scroll');
     document.body.style.top = `-${scrollPosition}px`;
+
+    pauseVideos();
   }
+
   function closeNav() {
     document.body.classList.remove('no-scroll');
     document.body.style.top = '';
     window.scrollTo(0, scrollPosition);
+
+    resumeVideos();
   }
 
   if (toggle && navLinks && overlay) {
-    const body = document.body;
-
     toggle.addEventListener('click', () => {
       const isOpen = navLinks.classList.toggle('open');
       toggle.classList.toggle('open');
       overlay.classList.toggle('open');
 
-      if (isOpen) {
-        openNav();
-      } else {
-        closeNav();
-      }
+      if (isOpen) openNav();
+      else closeNav();
     });
 
     overlay.addEventListener('click', () => {
@@ -194,11 +218,8 @@ document.addEventListener('DOMContentLoaded', function () {
       navLinks.classList.remove('open');
       overlay.classList.remove('open');
 
-      document.body.classList.remove('no-scroll');
-      document.body.style.top = '';
-      window.scrollTo(0, scrollPosition);
+      closeNav();
     });
-
   }
 
 
