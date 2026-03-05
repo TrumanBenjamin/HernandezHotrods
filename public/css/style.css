@@ -4,6 +4,7 @@ html {
   overflow-x: hidden ;
 }
 
+
 @font-face {
   font-family: 'hotRod'; /* You can name this whatever you want */
   src: url('../fonts/hotRod.ttf') format('truetype');
@@ -796,7 +797,7 @@ button.btn-cta {
   box-shadow: 0px 0px 20px 4px rgb(120 4 182 / 52%);
 }
 
-@media (max-width: 468px) {
+@media (max-width: 480px) {
   .ig-button {
     padding: 6px 10px;
   }
@@ -1168,7 +1169,7 @@ button.btn-cta {
     font-size: 14px;
   }
 }
-@media (max-width: 426px) {
+@media (max-width: 480px) {
   .form-flash {
     font-size: 12px;
   }
@@ -1906,7 +1907,7 @@ main {
       }
     }
 
-@media (max-width: 552px) {
+@media (max-width: 480px) {
   .builds-title span {
    font-size: 11vw;
   }
@@ -2284,16 +2285,6 @@ span.cta{ margin-left: 10px; letter-spacing: .2px; }
     backdrop-filter: blur(6px) saturate(120%);
     border-top: #0e0e0e 1px solid;
     }
-  .build-title-sticky::before,
-  .build-title-sticky::after {
-    display: none;
-  }
-}
-
-/* Phones — small text and no pseudo elements */
-@media (max-width: 480px) {
-  .build-title-sticky {
-  }
   .build-title-sticky::before,
   .build-title-sticky::after {
     display: none;
@@ -3122,7 +3113,7 @@ body.is-home .nav-logo.visible {
   .social-grid{ grid-template-columns: repeat(3, 1fr); height: 400px; }
   
 }
-@media (max-width: 520px){
+@media (max-width: 480px){
   .social-grid{ grid-template-columns: 1fr; padding: 0 24px; }
 }
 
@@ -3357,11 +3348,16 @@ body.is-home .nav-logo.visible {
     font-size: 10px !important;
   }
 }
-@media (max-width: 426px) {
+@media (max-width: 480px) {
   .home-contact-box {
     grid-template-columns: 2fr 2fr;
     padding: 24px 34px;
     gap: 8px;
+  }
+
+  .build-title-sticky::before,
+  .build-title-sticky::after {
+    display: none;
   }
 
   .home-contact-box h2{
@@ -3667,7 +3663,7 @@ html.is-ready .gallery-grid img.is-loaded {
 @media (max-width: 768px) {
   .gallery-grid { grid-template-columns: repeat(2, 1fr); }
 }
-@media (max-width: 520px) {
+@media (max-width: 480px) {
   .gallery-grid { grid-template-columns: 1fr; }
 }
 
@@ -3813,9 +3809,7 @@ html.is-ready .gallery-grid img.is-loaded {
   font-size: 24px;
 }
 
-@media (max-width: 768px) {
 
-}
 
 
 
@@ -5000,7 +4994,7 @@ p.success {
 
 /* mobile media queries */
 
-@media (max-width: 426px) {
+@media (max-width: 480px) {
   .nav-logo-img {
     height: 26px !important;
   }
@@ -5377,7 +5371,7 @@ p.success {
 }
 
 
-@media (min-width: 427px) {
+@media (min-width: 480px) {
   .btp-block {
     display: flex;
   }
@@ -5391,7 +5385,7 @@ p.success {
 
 
 
-@media (max-width: 426px) {
+@media (max-width: 480px) {
   .btp {
     display: block;
     overflow: hidden;
@@ -5470,7 +5464,7 @@ p.success {
 }
 
 
-@media (max-width: 426px){
+@media (max-width: 480px){
   .page-team .team-grid{
     width: 94vw;
     gap: 18px;

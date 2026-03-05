@@ -477,52 +477,6 @@ if (homeHero && homeFadeTarget) {
 
 
 
-// === inside your BTP scroll script ===
-  (function () {
-    const mq = window.matchMedia('(min-width: 427px)');
-    const wrap = document.querySelector('.btp');
-    const img  = wrap?.querySelector('img');
-    if (!wrap || !img) return;
-
-    const clamp = (n, a, b) => Math.min(b, Math.max(a, n));
-
-    let startRectTop = null; // element's top relative to viewport at measure time
-
-    // tune this: finish when the .btp top is dockPx from the top (not at 0)
-    let dockPx = 200; // ← e.g., finish 160px before reaching the very top
-
-    function measure() {
-      startRectTop = wrap.getBoundingClientRect().top; // anchor the start exactly where it is
-    }
-
-    function update() {
-      if (!mq.matches) { img.style.transform = ''; return; }
-
-      const rectTop = wrap.getBoundingClientRect().top;
-
-      // progress: 0 when rectTop === startRectTop, 1 when rectTop === dockPx
-      const denom = Math.max(1, startRectTop - dockPx); // avoid /0 if dockPx ≥ start
-      const t = clamp((startRectTop - rectTop) / denom, 0, 1);
-
-      // travel distance (within the btp container)
-      const maxShift = Math.max(0, wrap.clientWidth - img.clientWidth);
-      img.style.transform = `translateX(${(maxShift * t).toFixed(2)}px)`;
-    }
-
-    const onScroll = () => requestAnimationFrame(update);
-
-    window.addEventListener('load', () => { measure(); update(); });
-    window.addEventListener('resize', () => { measure(); update(); });
-    window.addEventListener('scroll', onScroll, { passive: true });
-
-    // optional: use a viewport fraction instead of pixels
-    // window.addEventListener('resize', () => { dockPx = window.innerHeight * 0.15; });
-
-    if (document.fonts && document.fonts.ready) {
-      document.fonts.ready.then(() => { measure(); update(); });
-    }
-  })();
-
 
 
   // full screen gallery view
