@@ -1305,6 +1305,59 @@
   });
 </script>
 
+<script>
+  (function () {
+    const LOGIN_URL = '/auth/login?expired=1';
+    let checking = false;
 
+    async function checkSession() {
+      if (checking) return;
+      checking = true;
+
+      try {
+        const res = await fetch('/auth/session-status', {
+          method: 'GET',
+          credentials: 'same-origin',
+          cache: 'no-store',
+          headers: {
+            'Accept': 'application/json'
+          }
+        });
+
+        if (!res.ok) {
+          console.log("[AUTH] session expired");
+          window.location.replace(LOGIN_URL);
+          return;
+        }
+
+        const data = await res.json();
+        if (!data.authenticated) {
+          console.log("[AUTH] session expired");
+          window.location.replace(LOGIN_URL);
+        }
+      } catch (err) {
+        // do nothing on temporary network hiccups
+      } finally {
+        checking = false;
+      }
+    }
+
+    // check shortly after page loads
+    window.addEventListener('load', () => {
+      setTimeout(checkSession, 1000);
+    });
+
+    // check every minute while page stays open
+    setInterval(checkSession, 60 * 1000);
+
+    // check as soon as user comes back to the tab
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) checkSession();
+    });
+
+    // extra safety when window regains focus
+    window.addEventListener('focus', checkSession);
+  })();
+</script>
 
 </main>

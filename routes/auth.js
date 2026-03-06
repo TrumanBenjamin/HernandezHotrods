@@ -7,12 +7,26 @@ router.get('/login', (req, res) => {
     return res.redirect('/admin');
   }
 
-  const err = (res.locals.flash?.error && res.locals.flash.error[0]) || null;
+  const flashErr = (res.locals.flash?.error && res.locals.flash.error[0]) || null;
+  const expiredErr = req.query.expired === '1'
+    ? 'Your session expired. Please log in again.'
+    : null;
 
   res.render('auth/login', {
     title: 'Admin Login',
-    error: err,
+    error: flashErr || expiredErr,
   });
+});
+
+router.get('/session-status', (req, res) => {
+  res.set('Cache-Control', 'no-store');
+
+  if (req.isAuthenticated && req.isAuthenticated()) {
+    return res.json({ authenticated: true });
+  }
+  console.log("[AUTH] session expired");
+
+  return res.status(401).json({ authenticated: false });
 });
 
 router.post("/login",
@@ -20,18 +34,28 @@ router.post("/login",
     failureRedirect: "/auth/login",
     failureFlash: "Invalid email or password. Please try again.",
   }),
-  (req, res) => {
-
+  (req, res, next) => {
     console.log("[LOGIN] auth success:", req.user.email);
+
+    req.session.userEmail = req.user.email;
 
     maybeSendOwnerLoginAlert(req, req.user)
       .catch(err => console.error("Owner login alert failed:", err));
 
-    res.redirect("/admin");
+    req.session.save((err) => {
+      if (err) return next(err);
+      res.redirect("/admin");
+    });
   }
 );
 
 router.post('/logout', (req, res, next) => {
+  if (req.user?.email) {
+    console.log(`[AUTH] ${req.user.email} logged out of their session`);
+  }
+
+  delete req.session.userEmail;
+
   req.logout(err => err ? next(err) : res.redirect('/'));
 });
 

@@ -18,13 +18,10 @@ async function uploadTmpAsJpegToKeyStrict(tmpPath, key, originalName = "") {
 
   try {
     // Normal formats
-    const sharpStart = Date.now();
     jpegBuf = await sharp(tmpPath)
       .rotate()
       .jpeg({ quality: 80 })
       .toBuffer();
-
-    console.log("[IMG] sharp ms:", Date.now() - sharpStart);
 
   } catch (err) {
     // HEIC/HEIF fallback
@@ -40,28 +37,24 @@ async function uploadTmpAsJpegToKeyStrict(tmpPath, key, originalName = "") {
       throw err;
     }
 
-    const readStart = Date.now();
-    // Only read into memory if HEIC
-    const input = await fs.readFile(tmpPath);
-    console.log("[IMG] read HEIC ms:", Date.now() - readStart);
+    const heicStart = Date.now();
 
-    const convertStart = Date.now();
+    const input = await fs.readFile(tmpPath);
+
     const converted = await heicConvert({
       buffer: input,
       format: "JPEG",
-      quality: 0.85, // 0..1
+      quality: 0.85,
     });
-    console.log("[IMG] heic convert ms:", Date.now() - convertStart);
 
-    const sharpStart = Date.now();
+    console.log("[IMG] HEIC read + convert ms:", Date.now() - heicStart);
+
     jpegBuf = await sharp(converted)
       .rotate()
       .jpeg({ quality: 90 })
       .toBuffer();
-      console.log("[IMG] sharp after HEIC ms:", Date.now() - sharpStart);
   }
 
-  const uploadStart = Date.now();
   await r2.send(new PutObjectCommand({
     Bucket: process.env.R2_BUCKET,
     Key: key,
@@ -69,7 +62,7 @@ async function uploadTmpAsJpegToKeyStrict(tmpPath, key, originalName = "") {
     ContentType: "image/jpeg",
     CacheControl: "public, max-age=31536000, immutable",
   }));
-  console.log("[IMG] upload ms:", Date.now() - uploadStart);
+
   console.log("[IMG] total ms:", Date.now() - totalStart);
 
   await fs.unlink(tmpPath).catch(() => {});
