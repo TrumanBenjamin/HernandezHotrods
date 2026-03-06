@@ -50,9 +50,12 @@ router.post("/login",
 );
 
 router.post('/logout', (req, res, next) => {
-  if (req.user?.email) {
-    console.log(`[AUTH] ${req.user.email} logged out of their session`);
+  if (!req.session?.userEmail) {
+    return res.redirect('/');
   }
+
+  const email = req.session.userEmail;
+  console.log(`[AUTH] ${email} logged out of their session`);
 
   delete req.session.userEmail;
 
