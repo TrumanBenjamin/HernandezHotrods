@@ -3541,114 +3541,55 @@ body.is-home .nav-logo.visible {
 
 /* 4-wide responsive gallery that fills the page naturally */
 .gallery-grid {
-  display: grid;
-  gap: 8px;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
+  display: block;
   padding: 20px 24px 20px;
   background: #010101b5;
   position: relative;
   z-index: 1;
 }
+
 .gallery-grid::before {
   content: "";
   position: absolute;
-  inset: 0;                        /* full cover */
-  /* background: #070707; */
-  z-index: -1;                     /* sit behind gallery items */
+  inset: 0;
+  z-index: -1;
 }
-.gallery-item { 
-  aspect-ratio: 4 / 3; 
-  overflow: hidden; 
-  width: 100%;
-  height: 100%;
-  margin: auto;
-}
-/* new stuff for   gallery loader */
 
 .gallery-row {
-  display: contents;
-}
-.gallery-row.row-visible .gallery-item { opacity: 1; }
-
-.gallery-row.row-visible .gallery-item,
-.gallery-row.row-visible .gallery-item img {
-  opacity: 1 !important;
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 8px;
+  margin-bottom: 8px;
 }
 
-.gallery-grid .gallery-item img {
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .35s ease, transform .35s ease;
-  will-change: opacity, transform;
+.gallery-row:last-child {
+  margin-bottom: 0;
 }
 
-/* reveal when the whole row is ready */
-.gallery-row.row-visible .gallery-item img {
-  opacity: 1 !important;
-  transform: translateY(0);
+.gallery-item {
+  aspect-ratio: 4 / 3;
+  overflow: hidden;
+  width: 100%;
+  height: 100%;
+  margin: 0;
 }
 
 .gallery-item img {
-  display: block;          /* no inline-img gaps */
+  display: block;
   width: 100%;
   height: 100%;
-  object-fit: cover;       /* same cropped look as before */
+  object-fit: cover;
   object-position: center;
-}
 
-
-/* 2) Base state only for gallery images (we control these) */
-.gallery-grid .gallery-item img {
   opacity: 0;
   transform: translateY(8px);
   transition: opacity .35s ease, transform .35s ease;
   will-change: opacity, transform;
 }
 
-/* 3) Neutralize the global “is-loaded” reveal inside the gallery */
-html.is-ready .gallery-grid img.is-loaded {
-  opacity: 0;                /* still hidden until row-visible */
-  transform: translateY(8px);
-}
-
-/* 4) The actual reveal gate */
-.gallery-row.row-visible .gallery-item { opacity: 1; }            /* if you keep figure fade */
 .gallery-row.row-visible .gallery-item img {
-  opacity: 1 !important;                                        /* beats any global/inline */
+  opacity: 1;
   transform: translateY(0);
-}
-
-/* base state: hide the IMAGE (not the figure) */
-.gallery-grid .gallery-item img {
-  opacity: 0;
-  transform: translateY(8px);
-  transition: opacity .35s ease, transform .35s ease;
-  will-change: opacity, transform;
-}
-
-/* reveal gate: when the row is ready, force-show the four images */
-.gallery-grid .gallery-row.row-visible .gallery-item img {
-  opacity: 1 !important;   /* beats global/inline */
-  transform: translateY(0);
-}
-
-/* make sure figures themselves are NOT hidden */
-.gallery-grid .gallery-item { opacity: 1; }
-
-/* optional: if you still have a global img fade elsewhere, keep it—
-   this higher-specificity rule ensures the gallery uses the values above */
-.gallery-grid img { transition: opacity .35s ease, transform .35s ease; }
-
-.gallery-grid img.is-loaded,
-.gallery-grid img.loaded,
-.gallery-grid img.lazyloaded {
-  opacity: 0 !important;
-  transform: translateY(8px) !important;
-}
-
-.no-global-img img.is-loaded {
-  opacity: 0 !important;
-  transform: translateY(8px) !important;
 }
 
 
@@ -3657,10 +3598,9 @@ html.is-ready .gallery-grid img.is-loaded {
   .gallery-grid { grid-template-columns: repeat(3, 1fr); }
 }
 @media (max-width: 768px) {
-  .gallery-grid { grid-template-columns: repeat(2, 1fr); }
-}
-@media (max-width: 480px) {
-  .gallery-grid { grid-template-columns: 1fr; }
+  .gallery-row {
+    grid-template-columns: 1fr;
+  }
 }
 
 /* .wip-section .cta-box {
