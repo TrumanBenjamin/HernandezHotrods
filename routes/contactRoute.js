@@ -44,7 +44,27 @@ router.get('/', (req, res) => {
 // POST /contact with uploads (wrapped so we can catch multer errors cleanly)
 router.post('/', (req, res) => {
   upload.array('photos', MAX_FILES)(req, res, async (err) => {
-    const { name, email, vehicle, message } = req.body;
+    const { name, email, vehicle, message, company, formStart } = req.body;
+    
+    if (company && company.trim() !== "") {
+      console.warn("Spam bot caught:", {
+        ip: req.ip,
+        email: req.body.email
+      });
+      return res.redirect('/contact?sent=1'); 
+    }
+
+    const elapsed = Date.now() - Number(formStart || 0);
+
+    if (!formStart || elapsed < 3000) {  // less than 3 seconds
+      console.warn("Spam bot caught by time trap:", {
+        ip: req.ip,
+        email
+      });
+
+  return res.redirect('/contact?sent=1');
+}
+    
     const errors = [];
 
     // collect multer errors (DON'T return yet)

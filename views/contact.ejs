@@ -59,6 +59,8 @@
         </div>
       </div>
 
+      <input type="hidden" name="formStart" id="formStart">
+      <input type="text" name="company" tabindex="-1" autocomplete="off" class="hp-field">
 
       <div class="field">
         <label for="vehicle">Vehicle Info <span class="optional">(optional)</span></label>
@@ -107,6 +109,10 @@
     </div>
   </section>
 
+
+<script>
+document.getElementById("formStart").value = Date.now();
+</script>
 <script>
   document.addEventListener('DOMContentLoaded', () => {
     // Success: auto fade out (same behavior you have now)
