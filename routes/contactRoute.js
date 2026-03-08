@@ -47,7 +47,7 @@ router.post('/', (req, res) => {
     const { name, email, vehicle, message, company, formStart } = req.body;
     
     if (company && company.trim() !== "") {
-      console.warn("Spam bot caught:", {
+      console.warn("Spam bot caught by honeypot:", {
         ip: req.ip,
         email: req.body.email
       });
